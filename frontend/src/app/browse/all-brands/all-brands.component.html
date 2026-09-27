@@ -13,16 +13,20 @@
 </div>
 
 <div class="brands-container">
-  @for (group of groupedBrands; track group.letter) {
-    <div [id]="group.letter" class="letter-section">
-      <h2 class="letter-header">{{ group.letter }}</h2>
-      <div class="letter-brands">
-        @for (item of group.brands; track item.id) {
-          <app-allbrands-item [item]="item"/>
-        }
-      </div>
-    </div>
-  } @empty {
+  @if (loading) {
     <p>Fetching brands...</p>
+  } @else if (groupedBrands.length === 0) {
+    <p>No brands found.</p>
+  } @else {
+    @for (group of groupedBrands; track group.letter) {
+      <div [id]="group.letter" class="letter-section">
+        <h2 class="letter-header">{{ group.letter }}</h2>
+        <div class="letter-brands">
+          @for (item of group.brands; track item.id) {
+            <app-allbrands-item [item]="item"/>
+          }
+        </div>
+      </div>
+    }
   }
 </div>

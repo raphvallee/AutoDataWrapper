@@ -15,23 +15,28 @@ import {BrandItemComponent} from './brand-item/brand-item.component';
 export class BrandComponent implements OnInit {
   brand: Brand | undefined;
   models: Model[] = [];
+  loading = true;
 
 
   constructor(private route: ActivatedRoute, public api: ApiService, public router: Router, private changeDetector: ChangeDetectorRef) {
   }
 
   async ngOnInit() {
-    let brandUrl: string = this.route.snapshot.params["brandId"];
-    let brandId: number = parseInt(brandUrl.split("-")[1]);
-    let tempBrand: Brand = await this.api.getBrandWithModels(brandId);
-    if (tempBrand == null) {
-      console.log(`no brand found for: ${brandUrl}`);
-      await this.router.navigate([""]);
+    this.loading = true;
+    try {
+      let brandUrl: string = this.route.snapshot.params["brandId"];
+      let brandId: number = parseInt(brandUrl.split("-")[1]);
+      let tempBrand: Brand = await this.api.getBrandWithModels(brandId);
+      if (tempBrand == null) {
+        console.log(`no brand found for: ${brandUrl}`);
+        await this.router.navigate([""]);
+      }
+      this.models = tempBrand!.models;
+      tempBrand!.models = [];
+      this.brand = tempBrand!;
+    } finally {
+      this.loading = false;
+      this.changeDetector.detectChanges();
     }
-    this.models = tempBrand!.models;
-    tempBrand!.models = [];
-    this.brand = tempBrand!;
-
-    this.changeDetector.detectChanges();
   }
 }

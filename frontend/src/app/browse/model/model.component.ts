@@ -15,22 +15,27 @@ import {ModelItemComponent} from './model-item/model-item.component';
 export class ModelComponent implements OnInit {
   model: Model | undefined;
   generations: Generation[] = [];
+  loading = true;
 
   constructor(private route: ActivatedRoute, public api: ApiService, public router: Router, private changeDetector: ChangeDetectorRef) {
   }
 
   async ngOnInit() {
-    let modelUrl: string = this.route.snapshot.params["modelId"];
-    let modelId: number = parseInt(modelUrl.split("-")[1]);
-    let tempModel: Model = await this.api.getModelWithGenerations(modelId);
-    if (tempModel == null) {
-      console.log(`no model found for: ${modelUrl}`);
-      await this.router.navigate([""]);
+    this.loading = true;
+    try {
+      let modelUrl: string = this.route.snapshot.params["modelId"];
+      let modelId: number = parseInt(modelUrl.split("-")[1]);
+      let tempModel: Model = await this.api.getModelWithGenerations(modelId);
+      if (tempModel == null) {
+        console.log(`no model found for: ${modelUrl}`);
+        await this.router.navigate([""]);
+      }
+      this.generations = tempModel!.generations;
+      tempModel!.generations = [];
+      this.model = tempModel!;
+    } finally {
+      this.loading = false;
+      this.changeDetector.detectChanges();
     }
-    this.generations = tempModel!.generations;
-    tempModel!.generations = [];
-    this.model = tempModel!;
-
-    this.changeDetector.detectChanges();
   }
 }

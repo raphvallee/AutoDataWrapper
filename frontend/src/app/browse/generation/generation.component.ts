@@ -15,22 +15,27 @@ import {GenerationItemComponent} from './generation-item/generation-item.compone
 export class GenerationComponent implements OnInit {
   generation: Generation | undefined;
   trims: Trim[] = [];
+  loading = true;
 
   constructor(private route: ActivatedRoute, public api: ApiService, public router: Router, private changeDetector: ChangeDetectorRef) {
   }
 
   async ngOnInit() {
-    let generationUrl: string = this.route.snapshot.params["generationId"];
-    let generationId: number = parseInt(generationUrl.split("-")[1]);
-    let tempGeneration: Generation = await this.api.getGenerationWithTrims(generationId);
-    if (tempGeneration == null) {
-      console.log(`no generation found for: ${generationUrl}`);
-      await this.router.navigate([""]);
+    this.loading = true;
+    try {
+      let generationUrl: string = this.route.snapshot.params["generationId"];
+      let generationId: number = parseInt(generationUrl.split("-")[1]);
+      let tempGeneration: Generation = await this.api.getGenerationWithTrims(generationId);
+      if (tempGeneration == null) {
+        console.log(`no generation found for: ${generationUrl}`);
+        await this.router.navigate([""]);
+      }
+      this.trims = tempGeneration!.trims;
+      tempGeneration!.trims = [];
+      this.generation = tempGeneration!;
+    } finally {
+      this.loading = false;
+      this.changeDetector.detectChanges();
     }
-    this.trims = tempGeneration!.trims;
-    tempGeneration!.trims = [];
-    this.generation = tempGeneration!;
-
-    this.changeDetector.detectChanges();
   }
 }

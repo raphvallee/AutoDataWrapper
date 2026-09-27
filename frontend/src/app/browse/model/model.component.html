@@ -7,8 +7,12 @@
 }
 
 
-@for (item of generations; track item) {
-  <app-model-item [item]="item"/>
-} @empty {
+@if (loading) {
   <p>Fetching generations...</p>
+} @else if (generations.length === 0) {
+  <p>No generations found.</p>
+} @else {
+  @for (item of generations; track item) {
+    <app-model-item [item]="item"/>
+  }
 }
