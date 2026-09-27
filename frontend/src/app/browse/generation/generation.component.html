@@ -7,8 +7,12 @@
 }
 
 
-@for (item of trims; track item) {
-  <app-generation-item [item]="item"/>
-} @empty {
+@if (loading) {
   <p>Fetching trims...</p>
+} @else if (trims.length === 0) {
+  <p>No trims found.</p>
+} @else {
+  @for (item of trims; track item) {
+    <app-generation-item [item]="item"/>
+  }
 }

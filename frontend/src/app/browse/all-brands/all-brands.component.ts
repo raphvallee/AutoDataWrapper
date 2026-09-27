@@ -25,6 +25,7 @@ export class AllBrandsComponent implements OnInit, AfterViewInit, OnDestroy {
   groupedBrands: GroupedBrands[] = [];
   letters: string[] = [];
   isFloating = false;
+  loading = true;
 
   @ViewChild('navTrigger') navTrigger!: ElementRef;
   private observer: IntersectionObserver | null = null;
@@ -33,9 +34,14 @@ export class AllBrandsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async ngOnInit() {
-    this.brands = await this.api.getAllBrands();
-    this.processBrands();
-    this.changeDetector.detectChanges();
+    this.loading = true;
+    try {
+      this.brands = await this.api.getAllBrands();
+      this.processBrands();
+    } finally {
+      this.loading = false;
+      this.changeDetector.detectChanges();
+    }
   }
 
   ngAfterViewInit() {

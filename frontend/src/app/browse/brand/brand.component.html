@@ -7,9 +7,13 @@
 }
 
 <div class="models-container">
-  @for (item of models; track item) {
-    <app-brand-item [item]="item"/>
-  } @empty {
+  @if (loading) {
     <p>Fetching models...</p>
+  } @else if (models.length === 0) {
+    <p>No models found.</p>
+  } @else {
+    @for (item of models; track item) {
+      <app-brand-item [item]="item"/>
+    }
   }
 </div>
