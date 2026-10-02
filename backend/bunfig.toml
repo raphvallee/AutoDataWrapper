@@ -1,0 +1,11 @@
+# Coverage gate for the backend.
+#
+# coverageThreshold is enforced: `bun test` exits non-zero below the value, so
+# CI fails on regression instead of printing a number nobody reads.
+# coverageSkipTestFiles keeps the *.test.ts helpers out of the denominator.
+[test]
+coverageThreshold = 1
+coverageSkipTestFiles = true
+# coverageSkipTestFiles only recognises *.test.ts, so the shared fixtures and
+# fakes under test/helpers would otherwise count against the threshold.
+coveragePathIgnorePatterns = ["**/test/**"]

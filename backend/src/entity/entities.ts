@@ -10,6 +10,17 @@ import {
 } from "typeorm";
 
 //TODO TRY EntityBaseWithDate extends EntiyBase, for startYear & endYear
+//
+// Coverage note: every field below typed with a class rather than a primitive
+// (Date, or another entity) makes oxc's decorator transform emit
+//     _decorateMetadata("design:type", typeof Date === "undefined" ? Object : Date)
+// on that field's decorator line. TypeORM needs the metadata, but the guard's
+// true arm cannot be reached - the class is imported and initialised before the
+// decorator runs. Each of those ten decorators therefore carries one branch no
+// test can cover, which is what the `v8 ignore` hints below them are for. The
+// range form is required: the hint has to span the decorator line, because the
+// ternary is attributed to a column inside it rather than to the statement.
+// Primitively typed fields need no hint because they emit no ternary.
 export abstract class EntityBase {
 
     @PrimaryGeneratedColumn()
@@ -21,7 +32,9 @@ export abstract class EntityBase {
     @Column()
     url: string = "";
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @CreateDateColumn()
+    /* v8 ignore stop */
     updatedAt!: Date;
 }
 
@@ -38,16 +51,22 @@ export class Brand extends EntityBase {
 @Entity()
 export class Model extends EntityBase {
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @Column()
+    /* v8 ignore stop */
     startYear: Date = new Date();
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @Column()
+    /* v8 ignore stop */
     endYear: Date = new Date();
 
     @Column()
     imageUrl: string = "";
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @ManyToOne(() => Brand, (brand) => brand.models)
+    /* v8 ignore stop */
     brand!: Brand;
 
     @OneToMany(() => Generation, (generation) => generation.model, {onDelete: "CASCADE"})
@@ -60,16 +79,22 @@ export class Generation extends EntityBase {
     @Column()
     chassisType: string = "";
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @Column()
+    /* v8 ignore stop */
     startYear: Date = new Date();
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @Column()
+    /* v8 ignore stop */
     endYear: Date = new Date();
 
     @Column()
     imageUrl: string = "";
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @ManyToOne(() => Model, (model) => model.generations)
+    /* v8 ignore stop */
     model!: Model;
 
     @OneToMany(() => Trim, (trim) => trim.generation, {onDelete: "CASCADE"})
@@ -302,16 +327,22 @@ export class TrimDetails extends EntityBase {
 @Entity()
 export class Trim extends EntityBase {
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @Column()
+    /* v8 ignore stop */
     startYear: Date = new Date();
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @Column()
+    /* v8 ignore stop */
     endYear: Date = new Date();
 
     @Column("simple-array")
     imageUrls: string[] = [];
 
+    /* v8 ignore start -- design:type ternary emitted by the transform, see note above */
     @ManyToOne(() => Generation, (generation) => generation.trims)
+    /* v8 ignore stop */
     generation!: Generation;
 
     @OneToOne(() => TrimDetails, {onDelete: "CASCADE"})
