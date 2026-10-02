@@ -3,6 +3,17 @@ import {ScraperEngine} from './ScraperEngine';
 import {Brand, Generation, Model, Trim, TrimDetails} from "../entity/entities";
 import {AppDataSource} from "../data-source";
 
+/**
+ * The site every scrape reads from, and the origin every image path hangs off.
+ *
+ * The page markup writes images root-relative ("/img/logos/AC.png"), which is
+ * only meaningful next to the page it came from. The frontend serves from
+ * localhost, so a stored relative path resolved against its own origin and every
+ * image 404'd. Storing the absolute URL keeps the row self-contained: any
+ * consumer can render it without knowing where it was scraped from.
+ */
+const SITE_ORIGIN = "https://www.auto-data.net";
+
 export class FetchProvider {
 
     private scraper: ScraperEngine;
@@ -261,18 +272,36 @@ export class FetchProvider {
     //#endregion
 
     //#region Scraping methods
+
+    /**
+     * Turns an image path from the page into a URL that can be fetched from
+     * anywhere.
+     *
+     * The pages write root-relative srcs, and they mix in already-absolute ones
+     * for assets served from a CDN, so only the relative form is rewritten. A
+     * missing src stays empty rather than becoming the site root, which would be
+     * a valid-looking but wrong URL that renders as a broken image instead of
+     * falling back to the frontend's placeholder.
+     */
+    private absoluteImageUrl(src: string | null | undefined): string {
+        if (!src) return "";
+        if (/^https?:\/\//i.test(src)) return src;
+        return `${SITE_ORIGIN}${src.startsWith("/") ? "" : "/"}${src}`;
+    }
+
     private async scrapeBrands(): Promise<any[]> {
-        const url = 'https://www.auto-data.net/en/allbrands';
+        const url = `${SITE_ORIGIN}/en/allbrands`;
 
         await this.scraper.initialize();
         await this.scraper.goto(url);
 
-        return await this.scraper.page!.evaluate(() => {
+        const scraped = await this.scraper.page!.evaluate(() => {
             const links = Array.from(document.querySelectorAll('div.brands > a'));
             return links
                 .map((link) => {
                     const brandName = link.querySelector('strong')?.textContent?.trim();
                     const url = link.getAttribute('href')?.split('/')[2];
+                    // Raw attribute: relative here, absolutised by the caller.
                     const imageUrl = link.querySelector('img')?.getAttribute('src');
 
                     return {
@@ -283,15 +312,19 @@ export class FetchProvider {
                 })
                 .filter((item) => item.url);
         });
+        return scraped.map((brand) => ({
+            ...brand,
+            imageUrl: this.absoluteImageUrl(brand.imageUrl),
+        }));
     }
 
     private async scrapeModelsByBrandUrl(brandUrl: string): Promise<any[]> {
-        const url = `https://www.auto-data.net/en/${brandUrl}`;
+        const url = `${SITE_ORIGIN}/en/${brandUrl}`;
 
         await this.scraper.initialize();
         await this.scraper.goto(url);
 
-        return await this.scraper.page!.evaluate(() => {
+        const scraped = await this.scraper.page!.evaluate(() => {
             const modelLinks = Array.from(document.querySelectorAll('a.modeli'));
 
             return modelLinks
@@ -311,17 +344,21 @@ export class FetchProvider {
                         imageUrl: imageUrl || '',
                     }
                 })
-                .filter((model) => model.url) // Filter out any entries without href;
-        })
+                    .filter((model) => model.url) // Filter out any entries without href;
+        });
+        return scraped.map((model) => ({
+            ...model,
+            imageUrl: this.absoluteImageUrl(model.imageUrl),
+        }));
     }
 
     private async scrapeGenerationsByModelUrl(modelUrl: string): Promise<any[]> {
-        const url = `https://www.auto-data.net/en/${modelUrl}`;
+        const url = `${SITE_ORIGIN}/en/${modelUrl}`;
 
         await this.scraper.initialize();
         await this.scraper.goto(url);
 
-        return await this.scraper.page!.evaluate(() => {
+        const scraped = await this.scraper.page!.evaluate(() => {
             // The generation list is a div per generation:
             //   <div class="generr"><div class="f"><a href="/en/<slug>">
             //     <img><strong class="tit">name</strong></a>
@@ -356,16 +393,20 @@ export class FetchProvider {
                     }
                 })
                 .filter((generation) => generation.url); // Rows without an href carry no slug.
-        })
+        });
+        return scraped.map((generation) => ({
+            ...generation,
+            imageUrl: this.absoluteImageUrl(generation.imageUrl),
+        }));
     }
 
     private async scrapeTrimsByGenerationUrl(generationUrl: string): Promise<any[]> {
-        const url = `https://www.auto-data.net/en/${generationUrl}`;
+        const url = `${SITE_ORIGIN}/en/${generationUrl}`;
 
         await this.scraper.initialize();
         await this.scraper.goto(url);
 
-        return await this.scraper.page!.evaluate(() => {
+        const scraped = await this.scraper.page!.evaluate(() => {
             // The gallery is page-level, not per row. Many generations render no
             // gallery at all, which is why the list is often empty.
             const imageUrls: string[] = Array.from(document.querySelectorAll('div.carTitimg img')).map(value => {
@@ -402,12 +443,20 @@ export class FetchProvider {
                         imageUrls: imageUrls || []
                     }
                 })
-                .filter((trim) => trim.url) // Filter out any entries without href;
-        })
+                    .filter((trim) => trim.url) // Filter out any entries without href;
+        });
+        return scraped.map((trim) => ({
+            ...trim,
+            // The gallery is a list, so every entry needs the same treatment.
+            // Unreachable fallback: the extraction above always returns an
+            // array, so imageUrls is never missing here.
+            /* v8 ignore next -- imageUrls is always set by the extraction above */
+            imageUrls: (trim.imageUrls || []).map((src) => this.absoluteImageUrl(src)),
+        }));
     }
 
     private async scrapeTrimDetailsByTrimUrl(trimUrl: string): Promise<any> {
-        const url = `https://www.auto-data.net/en/${trimUrl}`;
+        const url = `${SITE_ORIGIN}/en/${trimUrl}`;
 
         await this.scraper.initialize();
         await this.scraper.goto(url);

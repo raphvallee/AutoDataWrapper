@@ -38,7 +38,19 @@ mockModule("../src/data/ScraperEngine", () => ({ScraperEngine: RecordedScraper})
 const {FetchProvider} = await import("../src/data/fetch-provider.service");
 
 const BASE = "https://www.auto-data.net/en";
+const ORIGIN = "https://www.auto-data.net";
 const manager = (): EntityManager => db.dataSource.manager;
+
+/**
+ * An image URL as the frontend can actually fetch it.
+ *
+ * The recorded pages carry root-relative srcs, which are only meaningful next
+ * to the site they came from. Anything the frontend is handed has to be
+ * absolute, because it is rendered from a different origin.
+ */
+function isFetchableImageUrl(value: string | undefined): boolean {
+    return typeof value === "string" && value.startsWith(`${ORIGIN}/`);
+}
 
 /**
  * A slug is one path segment, which is what the scrapers take from an href.
@@ -108,6 +120,12 @@ describe("the fetch against recorded pages", () => {
         expect(brands.filter((brand) => brand.name === "").length).toBe(0);
         expect(brands.filter((brand) => !isSlug(brand.url ?? "")).length).toBe(0);
         expect(new Set(brands.map((brand) => brand.url)).size).toBe(brands.length);
+        // Every marque on the index has a logo, and every one of them has to be
+        // a URL the frontend can fetch - a stored "/img/logos/X.png" resolves
+        // against the frontend's own origin and 404s, which is how this page
+        // ended up rendering 398 broken images.
+        expect(brands.filter((brand) => !brand.imageUrl).length).toBe(0);
+        expect(brands.filter((brand) => !isFetchableImageUrl(brand.imageUrl)).length).toBe(0);
         expect(RecordedScraper.visited).toEqual([`${BASE}/allbrands`]);
     });
 
@@ -120,6 +138,7 @@ describe("the fetch against recorded pages", () => {
         expect(models.length).toBeGreaterThan(0);
         expect(models.filter((model) => model.name === "").length).toBe(0);
         expect(models.filter((model) => !isSlug(model.url)).length).toBe(0);
+        expect(models.filter((model) => !isFetchableImageUrl(model.imageUrl)).length).toBe(0);
         expect(models.filter((model) => yearOf(model.startYear) < 1900).length).toBe(0);
         // The service navigated with the slug it stored, not a fresh link.
         expect(RecordedScraper.visited.slice(0, 2)).toEqual([
@@ -137,6 +156,7 @@ describe("the fetch against recorded pages", () => {
         expect(generations.length).toBeGreaterThan(0);
         expect(generations.filter((generation) => generation.name === "").length).toBe(0);
         expect(generations.filter((generation) => !isSlug(generation.url)).length).toBe(0);
+        expect(generations.filter((generation) => !isFetchableImageUrl(generation.imageUrl)).length).toBe(0);
         expect(generations.filter((generation) => generation.chassisType === "").length).toBe(0);
         expect(generations.filter((generation) => yearOf(generation.startYear) < 1900).length).toBe(0);
         // The end year is optional on the page, the start year is not.
@@ -153,9 +173,11 @@ describe("the fetch against recorded pages", () => {
         expect(trims.filter((trim) => trim.name === "").length).toBe(0);
         expect(trims.filter((trim) => !isSlug(trim.url)).length).toBe(0);
         expect(trims.filter((trim) => yearOf(trim.startYear) < 1900).length).toBe(0);
-        // Not every generation has a photo gallery, so an empty list is fine -
-        // but it must never be null or missing.
+        // Not every generation has a photo gallery - the recorded one has none,
+        // which is why the list is often empty - so it must never be null or
+        // missing. Whatever it does hold has to be fetchable, not a bare path.
         expect(trims.filter((trim) => !Array.isArray(trim.imageUrls)).length).toBe(0);
+        expect(trims.flatMap((trim) => trim.imageUrls).filter((src) => !isFetchableImageUrl(src)).length).toBe(0);
     });
 
     test("a trim page yields most of its specification", async () => {

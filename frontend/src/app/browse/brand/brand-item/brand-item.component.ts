@@ -16,7 +16,21 @@ import {DatePipe} from '@angular/common';
 export class BrandItemComponent {
   @Input({required: true}) item!: Model;
 
+  /** Shown when the model has no photo, or its photo fails to load. */
+  readonly placeholder = 'https://placehold.co/100x100?text=No+photo';
+
   constructor(public router: Router, private route: ActivatedRoute, private pipe: SlugifyPipe) {
+  }
+
+  /**
+   * A stored imageUrl is a URL to another origin, so it can fail even though it
+   * is well-formed: a photo the site has since removed 404s. Without this the
+   * browser shows its own broken-image icon.
+   */
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img.src === this.placeholder) return;
+    img.src = this.placeholder;
   }
 
   public async clicked() {

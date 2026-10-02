@@ -1,6 +1,6 @@
 <a (click)="clicked()" class="model-item">
   <div class="image-container">
-    <img [alt]="item.name" [src]="item.imageUrl || 'https://placehold.co/100x100?text=' + item.name"
+    <img [alt]="item.name" [src]="item.imageUrl || placeholder" (error)="onImageError($event)"
          class="model-image">
   </div>
   <div class="model-details">
