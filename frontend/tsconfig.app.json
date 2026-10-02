@@ -3,6 +3,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    // The components and api.service.ts import the shared interfaces straight from
+    // the source - "../../../library/src/models" - rather than from a built
+    // package, so the program's inputs reach outside this folder. Without a
+    // rootDir that covers both trees, tsc infers frontend/ and rejects them with
+    // TS6059. TypeScript 5.9 tolerated that; 6.x (bumped in bd4cb9a) enforces
+    // it, which broke every one of those import sites.
+    "rootDir": "..",
     "outDir": "./out-tsc/app",
     "types": []
   },
