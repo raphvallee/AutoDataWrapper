@@ -14,6 +14,7 @@
     "test:vitest:coverage": "node node_modules/vitest/vitest.mjs run --coverage",
     "test:live": "LIVE_SCRAPER=1 bun test --isolate test/live-scraper.test.ts",
     "record:fixtures": "bun run scripts/record-scraper-pages.ts",
+    "sync:db": "bun run scripts/sync-db.ts",
     "smoke:sqlite": "bun scripts/smoke-sqlite.ts"
   },
   "prettier": {
