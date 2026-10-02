@@ -35,7 +35,7 @@
     "express": "^5.2.1",
     "puppeteer": "^24.39.1",
     "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.28"
+    "typeorm": "^1.1.1"
   },
   "devDependencies": {
     "@types/bun": "^1.4.2",
