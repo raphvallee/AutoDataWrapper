@@ -38,6 +38,17 @@ function isSlug(value: string): boolean {
     return value.length > 0 && !/[\s/?#]/.test(value);
 }
 
+/**
+ * An image the frontend can actually fetch.
+ *
+ * The live page hands back root-relative srcs. Storing one verbatim produces a
+ * URL that only resolves next to auto-data.net, so the frontend - served from
+ * localhost - renders a broken image. Every stored image URL has to be absolute.
+ */
+function isFetchableImageUrl(value: string | undefined): boolean {
+    return typeof value === "string" && value.startsWith("https://www.auto-data.net/");
+}
+
 function yearOf(value: Date): number {
     return value.getUTCFullYear();
 }
@@ -58,10 +69,16 @@ describe.skipIf(!live)("the fetch against the live site", () => {
             expect(brands.length).toBeGreaterThan(300);
             expect(brands.filter((brand) => brand.name === "").length).toBe(0);
             expect(brands.filter((brand) => !isSlug(brand.url ?? "")).length).toBe(0);
+            // /browse shows a logo for every marque, so all 398 of these URLs
+            // have to be absolute and every one of them has to resolve.
+            expect(brands.filter((brand) => !isFetchableImageUrl(brand.imageUrl)).length).toBe(0);
 
             const brand: Brand | null = await new FetchProvider().getBrandWithModels(brands[0].id);
             expect(brand?.models.length ?? 0).toBeGreaterThan(0);
             expect(brand!.models.filter((model) => !isSlug(model.url)).length).toBe(0);
+            expect(
+                brand!.models.filter((model) => model.imageUrl && !isFetchableImageUrl(model.imageUrl)).length
+            ).toBe(0);
             expect(brand!.models.filter((model) => yearOf(model.startYear) < 1900).length).toBe(0);
 
             const model: Model | null = await new FetchProvider().getModelWithGenerations(
@@ -70,6 +87,9 @@ describe.skipIf(!live)("the fetch against the live site", () => {
             expect(model?.generations.length ?? 0).toBeGreaterThan(0);
             expect(model!.generations.filter((g) => !isSlug(g.url)).length).toBe(0);
             expect(model!.generations.filter((g) => g.chassisType === "").length).toBe(0);
+            expect(
+                model!.generations.filter((g) => g.imageUrl && !isFetchableImageUrl(g.imageUrl)).length
+            ).toBe(0);
 
             const generation: Generation | null = await new FetchProvider().getGenerationWithTrims(
                 model!.generations[0].id
@@ -77,6 +97,10 @@ describe.skipIf(!live)("the fetch against the live site", () => {
             expect(generation?.trims.length ?? 0).toBeGreaterThan(0);
             expect(generation!.trims.filter((trim) => trim.name === "").length).toBe(0);
             expect(generation!.trims.filter((trim) => !isSlug(trim.url)).length).toBe(0);
+            expect(
+                generation!.trims.flatMap((trim) => trim.imageUrls).filter((src) => !isFetchableImageUrl(src))
+                    .length
+            ).toBe(0);
 
             const trim: Trim | null = await new FetchProvider().getTrimWithDetails(
                 generation!.trims[0].id

@@ -21,6 +21,23 @@ export const BRANDS_WITH_GAPS = `
   </div>
 `;
 
+/**
+ * The three src shapes an image URL has to survive: already absolute (a CDN),
+ * root-relative (what the site writes), and bare relative (a missing leading
+ * slash, which would otherwise resolve against the page's directory rather than
+ * the site root).
+ */
+export const BRANDS_WITH_IMAGE_URL_SHAPES = `
+  <div class="brands">
+    <a href="/en/absolute-brand-1"><strong>Absolute</strong>
+      <img src="https://cdn.example.com/logos/absolute.png"></a>
+    <a href="/en/root-relative-brand-2"><strong>Root relative</strong>
+      <img src="/img/root-relative.png"></a>
+    <a href="/en/bare-relative-brand-3"><strong>Bare relative</strong>
+      <img src="img/bare-relative.png"></a>
+  </div>
+`;
+
 /** a.modeli: no label, no year cell, no image, and a normal row. */
 export const MODELS_WITH_GAPS = `
   <a class="modeli" href="/en/3-series-model-5">

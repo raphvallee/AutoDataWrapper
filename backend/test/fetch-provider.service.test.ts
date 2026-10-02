@@ -4,6 +4,7 @@ import type {EntityManager} from "typeorm";
 import {Brand, Generation, Model, Trim, TrimDetails} from "../src/entity/entities";
 import {
     BRANDS_WITH_GAPS,
+    BRANDS_WITH_IMAGE_URL_SHAPES,
     DETAILS_WITH_GAPS,
     GENERATIONS_WITH_GAPS,
     MODELS_WITH_GAPS,
@@ -166,9 +167,27 @@ describe("FetchProvider", () => {
                 "no-image-brand-3",
             ]);
             expect(brands.map((brand) => brand.name)).toEqual(["BMW", "", "No image"]);
-            expect(brands[0].imageUrl).toBe("/img/bmw.png");
+            // Stored absolute: the frontend renders these from another origin,
+            // where a site-relative path would resolve to itself and 404.
+            expect(brands[0].imageUrl).toBe("https://www.auto-data.net/img/bmw.png");
             expect(brands[1].imageUrl).toBe("");
             expect(await manager().count(Brand)).toBe(3);
+        });
+
+        test("rewrites every shape of image src into a URL that can be fetched", async () => {
+            RecordedScraper.serveHtml(BRANDS_WITH_IMAGE_URL_SHAPES);
+
+            const brands = await new FetchProvider().getBrands();
+
+            expect(brands.map((brand) => brand.imageUrl)).toEqual([
+                // Already absolute: left alone, so a CDN URL keeps working.
+                "https://cdn.example.com/logos/absolute.png",
+                // Root-relative, the form the site actually writes.
+                "https://www.auto-data.net/img/root-relative.png",
+                // A missing leading slash would otherwise resolve against the
+                // page's own directory, not the site root.
+                "https://www.auto-data.net/img/bare-relative.png",
+            ]);
         });
 
         test("returns an empty list when the page has no links", async () => {
@@ -360,7 +379,7 @@ describe("FetchProvider", () => {
                 "",
             ]);
             expect(found?.generations.map((generation) => generation.imageUrl)).toEqual([
-                "/img/gen/3.png",
+                "https://www.auto-data.net/img/gen/3.png",
                 "",
                 "",
             ]);
@@ -449,9 +468,14 @@ describe("FetchProvider", () => {
 
             expect(found?.trims.map((trim) => trim.name)).toEqual(["320i", "Current", ""]);
             // The gallery is page-level, so every trim carries the same list,
-            // including the img that has no src.
-            expect(found?.trims[0].imageUrls).toEqual(["/img/trims/320.png", ""]);
-            expect(found?.trims[2].imageUrls).toEqual(["/img/trims/320.png", ""]);
+            // including the img that has no src - which stays empty rather than
+            // becoming a URL that renders as a broken image.
+            const gallery = [
+                "https://www.auto-data.net/img/trims/320.png",
+                "",
+            ];
+            expect(found?.trims[0].imageUrls).toEqual(gallery);
+            expect(found?.trims[2].imageUrls).toEqual(gallery);
             expect(String(found?.trims[1].endYear)).toBe("Invalid Date");
             expect(String(found?.trims[2].startYear)).toBe("Invalid Date");
         });
