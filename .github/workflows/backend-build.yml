@@ -32,6 +32,23 @@ jobs:
       working-directory: backend
       run: bun run build
 
+    # bunfig.toml pins coverageThreshold to 1, so this fails the build on any
+    # drop below 100% rather than printing a number nobody reads.
+    - name: Typecheck src and tests
+      working-directory: backend
+      run: bun run typecheck
+
+    - name: Test (bun)
+      working-directory: backend
+      run: bun run test:coverage
+
+    # The same suite has to pass under vitest too, on Node. It measures
+    # statements and branches as well, and vitest.config.mts pins those at 100
+    # with one documented exception (the decorator artifacts in entities.ts).
+    - name: Test (vitest)
+      working-directory: backend
+      run: bun run test:vitest:coverage
+
     # `bun run build` is only tsc, which never loads the native addon, so a green
     # build proves nothing about the data layer. This actually connects TypeORM to
     # SQLite and round-trips a write.

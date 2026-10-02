@@ -19,9 +19,13 @@ function isOlderThan(actual: number[], minimum: number[]): boolean {
     return false
 }
 
-export function assertBunCanLoadBetterSqlite3(): void {
+// The version is a parameter with a default so tests can exercise the
+// comparison against every version. `Bun.version` is a non-writable,
+// non-configurable property, so it cannot be stubbed from a test.
+export function assertBunCanLoadBetterSqlite3(
     // Undefined on Node, which loads the addon through Node's own N-API.
-    const bunVersion = (globalThis as { Bun?: { version: string } }).Bun?.version
+    bunVersion: string | undefined = (globalThis as { Bun?: { version: string } }).Bun?.version
+): void {
     if (!bunVersion) return
 
     if (isOlderThan(bunVersion.split(".").map(Number), MIN_BUN_VERSION)) {

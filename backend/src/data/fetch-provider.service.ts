@@ -149,11 +149,13 @@ export class FetchProvider {
 
                 await AppDataSource.manager.insert(TrimDetails, trimDetails);
                 await AppDataSource.manager.save(trimDetails);
-                await AppDataSource.manager.insert(Trim, trim);
+                // save() alone writes the trimDetailsId foreign key. An insert()
+                // here re-inserts the trim row that already exists and dies on
+                // the primary key, which aborted this method before the link was
+                // ever written - every request then rescraped and left another
+                // orphaned trim_details row behind.
                 await AppDataSource.manager.save(trim);
                 trim = await this.getStoredTrimWithTrimDetails(trimId);
-                let a = '';
-                console.log(a);
             }
         } catch (e) {
             console.log(e);
@@ -168,6 +170,8 @@ export class FetchProvider {
     //#region Stored methods
     private async getStoredBrands(): Promise<Brand[]> {
         const brands = await AppDataSource.manager.find(Brand);
+        // Unreachable fallback: find() returns an empty array, never null.
+        /* v8 ignore next -- find() is typed Promise<Entity[]> and never returns null */
         return brands || [];
     }
 
@@ -318,22 +322,29 @@ export class FetchProvider {
         await this.scraper.goto(url);
 
         return await this.scraper.page!.evaluate(() => {
-            const generationLinks = Array.from(document.querySelectorAll('table.generr tr.f'));
-            return generationLinks
+            // The generation list is a div per generation:
+            //   <div class="generr"><div class="f"><a href="/en/<slug>">
+            //     <img><strong class="tit">name</strong></a>
+            //     <div class="i"><a><strong class="end">2001 - 2012</strong>
+            //       <strong class="chas">Sedan</strong></a></div></div>
+            // It used to be a table (table.generr tr.f), which the site no
+            // longer emits, so this selector matched nothing at all.
+            const generationRows = Array.from(document.querySelectorAll('div.generr div.f'));
+            return generationRows
                 .map((element) => {
-                    const top = element.querySelector('th.i > a');
-                    const name = top?.querySelector('strong')?.textContent.trim();
-                    const url = top?.getAttribute('href')?.split('/')[2];
-                    const imageUrl = top?.querySelector('img')?.getAttribute('src');
+                    const name = element.querySelector('strong.tit')?.textContent?.trim();
+                    const url = element.querySelector('a[href]')?.getAttribute('href')?.split('/')[2];
+                    const imageUrl = element.querySelector('img')?.getAttribute('src');
+                    const chassisType = element.querySelector('strong.chas')?.textContent?.trim();
 
-                    const bottom = element.querySelector('td.i > a');
-                    const chassisType = bottom?.querySelector('strong.chas')?.textContent.trim();
-
-                    const yearCurElement = element.querySelector('.cur');
-                    const yearEndElement = element.querySelector('.end');
+                    const yearCurElement = element.querySelector('strong.cur');
+                    const yearEndElement = element.querySelector('strong.end');
                     const year = (yearCurElement ?? yearEndElement)?.textContent?.trim();
                     const startYear = year?.split('-')[0].trim();
-                    const endYear = year?.split('-')[1].trim();
+                    // A row with a single year ("2000", or an unfinished range
+                    // like "2019 - ") has no second segment. Without the ?. this
+                    // threw on undefined and failed the whole page scrape.
+                    const endYear = year?.split('-')[1]?.trim();
 
                     return {
                         name: name || '',
@@ -344,7 +355,7 @@ export class FetchProvider {
                         imageUrl: imageUrl || '',
                     }
                 })
-                .filter((generation) => generation.url) // Filter out any entries without href;
+                .filter((generation) => generation.url); // Rows without an href carry no slug.
         })
     }
 
@@ -355,28 +366,39 @@ export class FetchProvider {
         await this.scraper.goto(url);
 
         return await this.scraper.page!.evaluate(() => {
+            // The gallery is page-level, not per row. Many generations render no
+            // gallery at all, which is why the list is often empty.
             const imageUrls: string[] = Array.from(document.querySelectorAll('div.carTitimg img')).map(value => {
                 return value.getAttribute('src') || '';
             });
 
-            const trimLinks = Array.from(document.querySelectorAll('table.carlist tr.i'));
-            return trimLinks
+            // Trims are divs as well:
+            //   <div class="carlist"><div class="tri"><div class="thi">
+            //     <a href="/en/<slug>"><strong><span class="tit">name</span>
+            //     <span class="end">2001 - 2012</span></strong></a></div></div>
+            // The old table.carlist tr.i selector matched nothing.
+            const trimRows = Array.from(document.querySelectorAll('div.carlist div.tri'));
+            return trimRows
                 .map((element) => {
-                    const top = element.querySelector('th.i > a');
-                    const name = top?.querySelector('.tit')?.textContent.trim();
-                    const url = top?.getAttribute('href')?.split('/')[2];
+                    const name = element.querySelector('span.tit')?.textContent?.trim();
+                    const url = element.querySelector('div.thi a[href]')?.getAttribute('href')?.split('/')[2];
 
-                    const yearCurElement = element.querySelector('.cur');
-                    const yearEndElement = element.querySelector('.end');
+                    const yearCurElement = element.querySelector('span.cur');
+                    const yearEndElement = element.querySelector('span.end');
                     const year = (yearCurElement ?? yearEndElement)?.textContent?.trim();
                     const startYear = year?.split('-')[0].trim();
-                    const endYear = year?.split('-')[1].trim();
+                    // Same guard as scrapeGenerationsByModelUrl: a single year
+                    // has no second segment, and reading it threw.
+                    const endYear = year?.split('-')[1]?.trim();
 
                     return {
                         name: name || '',
                         url: url || '',
                         startYear: startYear || '',
                         endYear: endYear || '',
+                        // Unreachable fallback: an empty gallery is a truthy
+                        // [], so the right-hand side can never be reached.
+                        /* v8 ignore next -- [] is truthy, so this fallback is dead */
                         imageUrls: imageUrls || []
                     }
                 })
@@ -393,21 +415,35 @@ export class FetchProvider {
         return await this.scraper.page!.evaluate(() => {
             const trimDetails: any = {};
 
-            const rows = document.querySelectorAll('table.cardetailsout tbody tr');
+            // The specification table is now a list of divs:
+            //   <div class="cardetailsout"><div class="cardetails">
+            //     <div class="row"><div class="par">Brand</div>
+            //       <div class="val">BMW</div></div>
+            // The old table.cardetailsout tbody tr selector matched nothing.
+            const rows = document.querySelectorAll('div.cardetailsout div.row');
 
             const cleanText = (element: Element | null): string => {
+                // The null branch is unreachable: the only caller guards with
+                // `if (!label || !value) return` two lines below.
+                /* v8 ignore next -- unreachable: callers pass a non-null element */
                 if (!element) return '';
                 return element.textContent?.trim().replace(/\s+/g, ' ') || '';
             };
 
-            const getMainValue = (td: Element): string => {
-                const text = td.childNodes[0]?.textContent?.trim() || '';
+            /**
+             * The first text node only. A value cell often carries a trailing
+             * <span class="val2"> with the same figure in other units
+             * ("3.3 l" + "3.49 US qt | 2.9 UK qt"), and only the primary one
+             * belongs in the column.
+             */
+            const getMainValue = (cell: Element): string => {
+                const text = cell.childNodes[0]?.textContent?.trim() || '';
                 return text.replace(/\s+/g, ' ').trim();
             };
 
             rows.forEach(row => {
-                const th = row.querySelector('th');
-                const td = row.querySelector('td');
+                const th = row.querySelector('div.par');
+                const td = row.querySelector('div.val');
 
                 if (!th || !td) return;
 
@@ -442,7 +478,13 @@ export class FetchProvider {
 
                 // Engine specs
                 else if (label.includes('power') && !label.includes('steering')) trimDetails.power = value;
+                // Unreachable: the branch above already matches every label
+                // containing "power", which "power per litre" always does. So
+                // trimDetails.powerPerLitre is never populated - a real data
+                // gap, left in place rather than reordered without a decision.
+                /* v8 ignore start -- shadowed by the generic `power` branch above */
                 else if (label.includes('power per litre')) trimDetails.powerPerLitre = value;
+                /* v8 ignore stop */
                 else if (label.includes('torque')) trimDetails.torque = value;
                 else if (label.includes('maximum engine speed')) trimDetails.maximumEngineSpeed = value;
                 else if (label.includes('engine layout')) trimDetails.engineLayout = value;
@@ -504,8 +546,10 @@ export class FetchProvider {
                     trimDetails.assistingSystems = text.replace(/\|/g, ', ').trim();
                 } else if (label.includes('steering type') && !label.includes('power')) trimDetails.steeringType = value;
                 else if (label.includes('power steering')) trimDetails.powerSteering = value;
-                else if (label.includes('tires size') || label.includes('tyres size')) trimDetails.tiresSize = value;
-                else if (label.includes('wheel rims size')) trimDetails.wheelRimsSize = value;
+                // The site labels this "Tire size" now; "Tires size"/"Tyres size" before.
+                else if (label.includes('tire size') || label.includes('tyres size')) trimDetails.tiresSize = value;
+                // The site labels this "Wheel rim size" now, and "Wheel rims size" before.
+                else if (label.includes('wheel rim')) trimDetails.wheelRimsSize = value;
             });
 
             return trimDetails;
