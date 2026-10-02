@@ -1,32 +1,58 @@
-<h1>All Brands</h1>
+<div class="index">
+  <aside class="rail" aria-label="Jump to letter">
+    <ol class="rail__list">
+      @for (group of groupedBrands(); track group.letter) {
+        <li>
+          <a
+            class="rail__letter"
+            [class.rail__letter--active]="activeLetter() === group.letter"
+            [attr.aria-current]="activeLetter() === group.letter ? 'true' : null"
+            (click)="jumpTo(group.letter, $event)"
+            [href]="'#' + group.letter"
+          >{{ group.letter }}</a>
+        </li>
+      }
+    </ol>
+  </aside>
 
-<div #navTrigger class="navigation-bar static">
-  @for (letter of letters; track letter) {
-    <a [fragment]="letter" [routerLink]="[]" class="nav-letter">{{ letter }}</a>
-  }
-</div>
-
-<div [class.visible]="isFloating" class="navigation-bar floating">
-  @for (letter of letters; track letter) {
-    <a [fragment]="letter" [routerLink]="[]" class="nav-letter">{{ letter }}</a>
-  }
-</div>
-
-<div class="brands-container">
-  @if (loading) {
-    <p>Fetching brands...</p>
-  } @else if (groupedBrands.length === 0) {
-    <p>No brands found.</p>
-  } @else {
-    @for (group of groupedBrands; track group.letter) {
-      <div [id]="group.letter" class="letter-section">
-        <h2 class="letter-header">{{ group.letter }}</h2>
-        <div class="letter-brands">
-          @for (item of group.brands; track item.id) {
-            <app-allbrands-item [item]="item"/>
-          }
-        </div>
+  <div class="index__body">
+    <header class="page-head">
+      <div class="page-head__body">
+        <h1 class="display">All brands</h1>
+        <p class="meta">
+          Every marque in the database. Pick one to list its models.
+        </p>
       </div>
+      @if (!loading()) {
+        <p class="page-head__count">{{ total() }} marques</p>
+      }
+    </header>
+
+    @if (loading()) {
+      <div class="entries">
+        @for (placeholder of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; track placeholder) {
+          <div class="skeleton" style="height: 3rem"></div>
+        }
+      </div>
+    } @else if (total() === 0) {
+      <p class="state">
+        <strong>No brands yet</strong>
+        The database has no marques in it. Add some, then reload.
+      </p>
+    } @else {
+      @for (group of groupedBrands(); track group.letter) {
+        <section [id]="group.letter" class="letter-section">
+          <h2 class="letter-head">
+            <span class="letter-head__key">{{ group.letter }}</span>
+            <span class="letter-head__count figure">{{ group.brands.length }}</span>
+          </h2>
+          <div class="entries">
+            @for (item of group.brands; track item.id) {
+              <app-allbrands-item [item]="item"/>
+            }
+          </div>
+        </section>
+      }
     }
-  }
+  </div>
 </div>

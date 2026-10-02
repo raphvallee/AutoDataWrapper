@@ -1,42 +1,53 @@
-import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit, inject, signal} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {ApiService} from '../../api.service';
-import {Brand, Model} from '../../../../../library/src/models'
+import {Brand, Model} from '../../../../../library/src/models';
 import {BrandItemComponent} from './brand-item/brand-item.component';
+import {NavState} from '../../nav-state';
 
 @Component({
   selector: 'app-brand',
-  imports: [
-    BrandItemComponent
-  ],
+  imports: [BrandItemComponent],
   templateUrl: './brand.component.html',
   styleUrl: './brand.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BrandComponent implements OnInit {
-  brand: Brand | undefined;
-  models: Model[] = [];
-  loading = true;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly api = inject(ApiService);
+  private readonly nav = inject(NavState);
 
-
-  constructor(private route: ActivatedRoute, public api: ApiService, public router: Router, private changeDetector: ChangeDetectorRef) {
-  }
+  readonly brand = signal<Brand | null>(null);
+  readonly models = signal<Model[]>([]);
+  readonly loading = signal(true);
+  readonly failed = signal(false);
 
   async ngOnInit() {
-    this.loading = true;
+    this.loading.set(true);
+    this.failed.set(false);
+    this.nav.set([]);
     try {
-      let brandUrl: string = this.route.snapshot.params["brandId"];
-      let brandId: number = parseInt(brandUrl.split("-")[1]);
-      let tempBrand: Brand = await this.api.getBrandWithModels(brandId);
-      if (tempBrand == null) {
-        console.log(`no brand found for: ${brandUrl}`);
-        await this.router.navigate([""]);
+      const segment: string = this.route.snapshot.params['brandId'];
+      const brandId = parseInt(segment.split('-')[1], 10);
+      const loaded = await this.api.getBrandWithModels(brandId);
+      if (!loaded) {
+        this.failed.set(true);
+        return;
       }
-      this.models = tempBrand!.models;
-      tempBrand!.models = [];
-      this.brand = tempBrand!;
+      const models = loaded.models ?? [];
+      this.models.set(models);
+      // models is dropped before the brand is stored: the list owns them now,
+      // and a page should not hold the whole tree twice.
+      this.brand.set({...loaded, models: []});
+      this.nav.set([
+        {label: 'Brands', link: ['/browse']},
+        {label: loaded.name, link: null},
+      ]);
+    } catch {
+      this.failed.set(true);
     } finally {
-      this.loading = false;
-      this.changeDetector.detectChanges();
+      this.loading.set(false);
     }
   }
 }

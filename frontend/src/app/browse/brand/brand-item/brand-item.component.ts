@@ -1,41 +1,29 @@
-import {Component, Input} from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
-import {Model} from '../../../../../../library/src/models'
-import {SlugifyPipe} from '../../../slugify-pipe';
-import {DatePipe} from '@angular/common';
+import {ChangeDetectionStrategy, Component, Input, computed} from '@angular/core';
+import {RouterLink} from '@angular/router';
+import {Model} from '../../../../../../library/src/models';
+import {entitySlug, isInProduction, yearRange} from '../../../format';
 
 @Component({
   selector: 'app-brand-item',
-  imports: [
-    DatePipe
-  ],
+  imports: [RouterLink],
   templateUrl: './brand-item.component.html',
   styleUrl: './brand-item.component.css',
-  providers: [SlugifyPipe]
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BrandItemComponent {
   @Input({required: true}) item!: Model;
 
-  /** Shown when the model has no photo, or its photo fails to load. */
-  readonly placeholder = 'https://placehold.co/100x100?text=No+photo';
-
-  constructor(public router: Router, private route: ActivatedRoute, private pipe: SlugifyPipe) {
-  }
+  protected readonly slug = computed(() => entitySlug(this.item?.name ?? '', this.item?.id ?? 0));
+  protected readonly years = computed(() => yearRange(this.item?.startYear, this.item?.endYear));
+  protected readonly inProduction = computed(() => isInProduction(this.item?.endYear));
 
   /**
    * A stored imageUrl is a URL to another origin, so it can fail even though it
-   * is well-formed: a photo the site has since removed 404s. Without this the
-   * browser shows its own broken-image icon.
+   * is well-formed: a photo the site has since removed will 404, and some
+   * origins are blocked outright. Dropping the image leaves the sunken plate,
+   * which reads as a deliberate empty frame instead of a broken-image glyph.
    */
-  onImageError(event: Event): void {
-    const img = event.target as HTMLImageElement;
-    if (img.src === this.placeholder) return;
-    img.src = this.placeholder;
-  }
-
-  public async clicked() {
-    let modelName = this.pipe.transform(this.item.name);
-    let modelUrl = modelName + "-" + this.item.id;
-    await this.router.navigate([modelUrl], {relativeTo: this.route});
+  protected onImageError(event: Event): void {
+    (event.target as HTMLImageElement).style.display = 'none';
   }
 }

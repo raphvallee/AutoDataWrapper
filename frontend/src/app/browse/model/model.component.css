@@ -1,0 +1,35 @@
+/*
+ * Deliberately NOT reusing the global .row class here. That rule is
+ * `display: grid` with a 116px / 1fr / auto track list, and on a <tr> it turns
+ * the row into a grid container, which throws away the table's column widths
+ * and squeezes the long generation name to one word per line.
+ */
+tbody .gen-row {
+  cursor: pointer;
+}
+
+tbody .gen-row:hover {
+  background: var(--panel);
+}
+
+tbody .gen-row td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+tbody .gen-row td:first-child {
+  position: relative;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * The anchor is only as wide as the generation name, but its hit area is
+ * stretched over that whole cell, so the name reads as one target. The
+ * remaining cells are caught by the row's click handler, and the guard there
+ * stops the click being handled twice when the anchor is the one hit.
+ */
+.gen-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}

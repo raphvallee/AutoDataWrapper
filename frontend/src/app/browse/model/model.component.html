@@ -1,18 +1,62 @@
-<p>model works!</p>
+<div class="page">
+  <header class="page-head">
+    @if (model(); as m) {
+      <div class="page-head__body">
+        <h1 class="display">{{ m.name }}</h1>
+        <p class="meta">
+          {{ generations().length }} {{ generations().length === 1 ? 'generation' : 'generations' }}.
+          Pick one to compare its trims.
+        </p>
+      </div>
+    } @else {
+      <div class="page-head__body">
+        <h1 class="display">Loading</h1>
+      </div>
+    }
+  </header>
 
-@if (model?.name) {
-  <p>Showing generations for {{ model.name }}</p>
-} @else {
-  <p>Showing generations for ...</p>
-}
-
-
-@if (loading) {
-  <p>Fetching generations...</p>
-} @else if (generations.length === 0) {
-  <p>No generations found.</p>
-} @else {
-  @for (item of generations; track item) {
-    <app-model-item [item]="item"/>
+  @if (loading()) {
+    <div class="skeleton" style="height: 14rem"></div>
+  } @else if (failed()) {
+    <p class="state">
+      <strong>We could not load that model</strong>
+      Nothing in the database matches this address.
+    </p>
+  } @else if (generations().length === 0) {
+    <p class="state">
+      <strong>No generations recorded</strong>
+      Nothing has been added under {{ model()?.name }} yet.
+    </p>
+  } @else {
+    <!-- Generations carry no photo worth featuring, only figures, so they read
+         as a table rather than as another grid of tiles. Fixed layout with an
+         explicit first column: generation names run long ("Alfa Romeo 145
+         (930, facelift 1999)") and auto layout was squeezing that column to
+         one word per line. -->
+    <table class="sheet sheet--gens">
+      <colgroup>
+        <col class="sheet__col-name"/>
+        <col class="sheet__col-narrow"/>
+        <col class="sheet__col-years"/>
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col">Generation</th>
+          <th scope="col">Body</th>
+          <th scope="col">Years</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of generations(); track item.id) {
+<tr class="gen-row" (click)="open($event, slugs()!.get(item.id)!)">
+            <td class="sheet__row-title">
+              <a class="gen-link" [routerLink]="[slugs()!.get(item.id)!]">{{ item.name }}</a>
+            </td>
+            <td class="sheet__label">{{ item.chassisType || '—' }}</td>
+            <td class="sheet__value">{{ years(item.startYear, item.endYear) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
   }
-}
+</div>

@@ -1,19 +1,46 @@
-<p>brand works!</p>
-
-@if (brand?.name) {
-  <p>Showing models for {{ brand.name }}</p>
-} @else {
-  <p>Showing models for ...</p>
-}
-
-<div class="models-container">
-  @if (loading) {
-    <p>Fetching models...</p>
-  } @else if (models.length === 0) {
-    <p>No models found.</p>
-  } @else {
-    @for (item of models; track item) {
-      <app-brand-item [item]="item"/>
+<div class="page">
+  <header class="page-head">
+    @if (brand(); as b) {
+      @if (b.imageUrl) {
+        <img class="page-head__mark" [src]="b.imageUrl" [alt]="b.name + ' logo'" (error)="$event.target.style.visibility = 'hidden'"/>
+      }
+      <div class="page-head__body">
+        <div class="page-head__title-row">
+          <h1 class="display">{{ b.name }}</h1>
+        </div>
+        <p class="meta">
+          {{ models().length }} {{ models().length === 1 ? 'model' : 'models' }} in the database.
+          Pick one to see its generations.
+        </p>
+      </div>
+    } @else {
+      <div class="page-head__body">
+        <h1 class="display">Loading</h1>
+      </div>
     }
+  </header>
+
+  @if (loading()) {
+    <div class="rows">
+      @for (placeholder of [1, 2, 3, 4, 5, 6, 7]; track placeholder) {
+        <div class="skeleton" style="height: 5.5rem"></div>
+      }
+    </div>
+  } @else if (failed()) {
+    <p class="state">
+      <strong>We could not load that brand</strong>
+      The database has no marque matching this address. It may have been removed.
+    </p>
+  } @else if (models().length === 0) {
+    <p class="state">
+      <strong>No models recorded</strong>
+      Nothing has been added under {{ brand()?.name }} yet.
+    </p>
+  } @else {
+    <div class="rows">
+      @for (item of models(); track item.id) {
+        <app-brand-item [item]="item"/>
+      }
+    </div>
   }
 </div>

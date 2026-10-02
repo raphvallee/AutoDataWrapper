@@ -1,0 +1,109 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  flex-wrap: wrap;
+  min-height: var(--bar-h);
+  padding: 0.625rem var(--gutter);
+  /* Opaque, because content scrolls underneath it and a blur would let the
+     letters of a brand grid show through the path. */
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.mark__glyph {
+  width: 21px;
+  height: 21px;
+  color: var(--signal);
+}
+
+.mark__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.mark__name-rest {
+  color: var(--faint);
+  font-weight: 400;
+}
+
+.mark:hover .mark__name-rest {
+  color: var(--dim);
+}
+
+/* The path runs to the end of the bar and truncates, so a long trim name never
+   pushes the layout around or wraps into a second row on desktop. */
+.path {
+  flex: 1;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0 0.5rem;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  flex-wrap: nowrap;
+}
+
+.path__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* The separator belongs to the item it follows, so hiding an item on narrow
+   screens takes its separator with it. */
+.path__item + .path__item::before {
+  content: '/';
+  flex-shrink: 0;
+  color: var(--line);
+}
+
+.path__crumb {
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s var(--ease);
+}
+
+.path__crumb--here {
+  color: var(--text);
+  font-weight: 500;
+  /* The current level keeps its full weight so the eye lands there first. */
+}
+
+.path__crumb:not(.path__crumb--here):hover {
+  color: var(--signal);
+}
+
+/* Below this width there is no room to put the path beside the wordmark, so it
+   drops to its own row. Only the last two levels survive: the full path runs to
+   five items deep and would truncate every one of them to nothing. */
+@media (max-width: 46rem) {
+  .bar {
+    align-items: center;
+    row-gap: 0.375rem;
+  }
+
+  .path {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+
+  .path__item:not(:nth-last-child(-n + 2)) {
+    display: none;
+  }
+}

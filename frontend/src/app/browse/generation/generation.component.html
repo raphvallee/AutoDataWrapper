@@ -1,18 +1,54 @@
-<p>generation works!</p>
+<div class="page">
+  <header class="page-head">
+    @if (generation(); as g) {
+      <div class="page-head__body">
+        <h1 class="display">{{ g.name }}</h1>
+        <p class="meta-line">
+          <span>{{ g.chassisType || 'Body not recorded' }}</span>
+          <span>{{ years(g.startYear, g.endYear) }}</span>
+          <span>{{ trims().length }} {{ trims().length === 1 ? 'trim' : 'trims' }}</span>
+        </p>
+      </div>
+    } @else {
+      <div class="page-head__body">
+        <h1 class="display">Loading</h1>
+      </div>
+    }
+  </header>
 
-@if (generation?.name) {
-  <p>Showing trims for {{ generation.name }}</p>
-} @else {
-  <p>Showing trims for ...</p>
-}
-
-
-@if (loading) {
-  <p>Fetching trims...</p>
-} @else if (trims.length === 0) {
-  <p>No trims found.</p>
-} @else {
-  @for (item of trims; track item) {
-    <app-generation-item [item]="item"/>
+  @if (loading()) {
+    <div class="tiles">
+      @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+        <div class="skeleton" style="height: 15rem"></div>
+      }
+    </div>
+  } @else if (failed()) {
+    <p class="state">
+      <strong>We could not load that generation</strong>
+      Nothing in the database matches this address.
+    </p>
+  } @else if (trims().length === 0) {
+    <p class="state">
+      <strong>No trims recorded</strong>
+      The source page listed no variants for this generation.
+    </p>
+  } @else {
+    <!-- Trims are photo-led, so they are the one list on this site that earns a
+         tile grid: the picture is the thing being scanned. -->
+    <div class="tiles">
+      @for (item of trims(); track item.id) {
+        <a class="tile" [routerLink]="[slugs()!.get(item.id)!]">
+          <span class="tile__plate">
+            @if (item.imageUrls.length) {
+              <img [alt]="" [src]="item.imageUrls[0]" loading="lazy"/>
+            }
+          </span>
+          <span class="tile__body">
+            <span class="tile__name">{{ item.name }}</span>
+            <span class="row__years">{{ years(item.startYear, item.endYear) }}</span>
+          </span>
+        </a>
+      }
+    </div>
   }
-}
+</div>
