@@ -161,3 +161,21 @@ export const DETAILS_WITH_GAPS = `
     </div>
   </div>
 `;
+
+/**
+ * The <br>-separated "Assisting systems" cell in the shapes the real trim pages
+ * produce. Separate from DETAILS_WITH_GAPS because one page yields one value
+ * per label: adding these rows there would only test whichever came last.
+ *
+ * The trailing and doubled breaks are the point. A live trim page ends the
+ * cell with a break, and the source nests its entries across lines, so both
+ * produce an empty entry that must not become a trailing ", " or a blank
+ * between two systems.
+ */
+export const ASSISTING_SYSTEMS_SHAPES: {html: string, expected: string}[] = [
+  {html: 'ABS<br>ESP<br>TCS', expected: 'ABS, ESP, TCS'},
+  {html: 'ABS (Anti-lock braking system)<br>', expected: 'ABS (Anti-lock braking system)'},
+  {html: 'ABS<br>\n        ESP', expected: 'ABS, ESP'},
+  {html: 'ABS<br><br>ESP', expected: 'ABS, ESP'},
+  {html: 'ABS', expected: 'ABS'},
+];

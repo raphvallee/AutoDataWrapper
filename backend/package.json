@@ -15,6 +15,7 @@
     "test:live": "LIVE_SCRAPER=1 bun test --isolate test/live-scraper.test.ts",
     "record:fixtures": "bun run scripts/record-scraper-pages.ts",
     "sync:db": "bun run scripts/sync-db.ts",
+    "fix:assisting-systems": "bun run scripts/fix-assisting-systems.ts",
     "smoke:sqlite": "bun scripts/smoke-sqlite.ts"
   },
   "prettier": {

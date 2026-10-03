@@ -19,7 +19,9 @@
       </div>
     } @else {
       <div class="page-head__body">
-        <h1 class="display">Loading</h1>
+        <!-- The heading has to change with the state: leaving "Loading" above a
+             failure message reads as a request still in flight. -->
+        <h1 class="display">{{ failed() ? 'Not found' : 'Loading' }}</h1>
       </div>
     }
   </header>
@@ -87,6 +89,20 @@
               </tbody>
             </table>
           </section>
+        } @empty {
+          <!-- Most trims in the database have no scraped record yet, so this is
+               the common case rather than an edge. Saying so beats an empty
+               right-hand column that reads as "this car has no specifications". -->
+          <p class="state state--inline">
+            <strong>No specification recorded</strong>
+            This trim has no scraped specification sheet yet. The source page has
+            @if (trim()?.url) {
+              <a class="source" [href]="'https://www.auto-data.net/en/' + trim()!.url"
+                 target="_blank" rel="noopener noreferrer">the figures here</a>.
+            } @else {
+              the figures.
+            }
+          </p>
         }
       </div>
     </div>

@@ -4,7 +4,9 @@ export interface Brand {
     url: string;
     updatedAt: Date;
     imageUrl?: string;
-    models: Model[];
+    // Optional because only /brand/:id loads them; /brands returns the marques
+    // alone.
+    models?: Model[];
 }
 
 export interface Model {
@@ -12,11 +14,16 @@ export interface Model {
     name: string;
     url: string;
     updatedAt: Date;
-    startYear: Date;
-    endYear: Date;
+    // Nullable because the source has no end date for a car still in production,
+    // and the scraper stores an unparseable value that the API serialises as
+    // null rather than a sentinel date. `format.yearOf` reads both shapes.
+    startYear: Date | null;
+    endYear: Date | null;
     imageUrl: string;
-    brand: Brand;
-    generations: Generation[];
+    // Optional: an endpoint loads the brand only when the page above it needs
+    // one to name, which is /model/:id and the deep-link pages below it.
+    brand?: Brand;
+    generations?: Generation[];
 }
 
 export interface Generation {
@@ -25,11 +32,11 @@ export interface Generation {
     url: string;
     updatedAt: Date;
     chassisType: string;
-    startYear: Date;
-    endYear: Date;
+    startYear: Date | null;
+    endYear: Date | null;
     imageUrl: string;
-    model: Model;
-    trims: Trim[];
+    model?: Model;
+    trims?: Trim[];
 }
 
 export interface TrimDetails {
@@ -121,9 +128,13 @@ export interface Trim {
     name: string;
     url: string;
     updatedAt: Date;
-    startYear: Date;
-    endYear: Date;
+    // Nullable for the same reason as Model: an open-ended production run.
+    startYear: Date | null;
+    endYear: Date | null;
     imageUrls: string[];
-    generation: Generation;
-    trimDetails: TrimDetails;
+    generation?: Generation;
+    // Optional: /trim/:id loads the scraped record, but only once the scraper
+    // has run for this trim. Until then the endpoint returns it as null and the
+    // page shows the summary without a spec sheet.
+    trimDetails?: TrimDetails | null;
 }

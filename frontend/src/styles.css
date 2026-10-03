@@ -222,6 +222,18 @@ button {
   margin-bottom: 0.25rem;
 }
 
+/* A state message sitting inside a two-column readout rather than spanning the
+   page on its own: it fills the column beside the photo instead of dropping
+   the reader below the fold. */
+.state--inline {
+  padding: 1.75rem 1.25rem;
+  text-align: left;
+}
+
+.state--inline .source {
+  white-space: nowrap;
+}
+
 /* Loading keeps the layout stable so nothing jumps when data lands. */
 .skeleton {
   border-radius: var(--radius-sm);
@@ -418,24 +430,28 @@ button {
 
 /* The fixed columns are sized for the desktop table. At phone width they would
    leave the generation name a couple of characters wide, so they tighten and
-   the name column takes the difference. */
+   the name column takes the difference. The name is the thing being read and
+   the other two columns are short fixed vocabulary ("Hatchback", "1999 – 2000"),
+   so they give up width first and shrink a step in type rather than squeezing
+   the name further. */
 @media (max-width: 44rem) {
   .sheet--gens {
     width: 100%;
   }
 
   .sheet__col-narrow {
-    width: 5.5rem;
+    width: 4.5rem;
   }
 
   .sheet__col-years {
-    width: 6.75rem;
+    width: 5.75rem;
   }
 
   .sheet--gens th,
   .sheet--gens td {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
+    font-size: 0.8125rem;
   }
 }
 

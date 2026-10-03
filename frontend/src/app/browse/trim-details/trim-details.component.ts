@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, OnInit, inject, signal} from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute} from '@angular/router';
 import {Trim, TrimDetails} from "../../../../../library/src/models";
 import {ApiService} from '../../api.service';
 import {Crumb, NavState} from '../../nav-state';
@@ -14,7 +14,6 @@ import {SpecGroup, entitySlug, groupDetails, headlineFigures, yearRange} from '.
 })
 export class TrimDetailsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly api = inject(ApiService);
   private readonly nav = inject(NavState);
 
@@ -54,21 +53,41 @@ export class TrimDetailsComponent implements OnInit {
     }
   }
 
-  /** Appends to the path the generation page published, as with generations. */
+  /**
+   * Appends to the path the generation page published, as with generations. On a
+   * direct load of a deep link there is nothing to inherit, so the chain is
+   * rebuilt from the record, which arrives with its generation, that
+   * generation's model, and the model's brand.
+   *
+   * The links carry every segment down to their own level, not just a slug: each
+   * route is nested under the one above it, so a short link resolves against the
+   * current route and lands somewhere else entirely.
+   */
   private pathFor(trim: Trim): Crumb[] {
-    const generation = trim.generation;
     const self: Crumb = {label: trim.name, link: null};
     const inherited = this.nav.crumbs();
     if (inherited.length > 0) return [...inherited, self];
+
+    const generation = trim.generation;
     if (!generation) return [{label: 'Brands', link: ['/browse']}, self];
+
+    const model = generation.model;
+    if (!model) {
+      return [
+        {label: 'Brands', link: ['/browse']},
+        {label: generation.name, link: null},
+        self,
+      ];
+    }
+
+    const brand = model.brand;
+    const brandSegments = brand ? [entitySlug(brand.name, brand.id)] : [];
+    const modelSegments = [...brandSegments, entitySlug(model.name, model.id)];
     return [
       {label: 'Brands', link: ['/browse']},
-      {
-        label: generation.model?.name ?? generation.name,
-        link: generation.model
-          ? ['/browse', entitySlug(generation.model.name, generation.model.id)]
-          : null,
-      },
+      ...(brand ? [{label: brand.name, link: ['/browse', ...brandSegments]}] : []),
+      {label: model.name, link: ['/browse', ...modelSegments]},
+      {label: generation.name, link: ['/browse', ...modelSegments, entitySlug(generation.name, generation.id)]},
       self,
     ];
   }
@@ -89,11 +108,6 @@ export class TrimDetailsComponent implements OnInit {
 
   selectPhoto(index: number): void {
     this.photo.set(index);
-  }
-
-  goToGeneration(): void {
-    const generation = this.trim()?.generation;
-    if (generation) void this.router.navigate([entitySlug(generation.name, generation.id)]);
   }
 
   onImageError(event: Event): void {

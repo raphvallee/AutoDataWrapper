@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, OnInit, inject, signal} from '@angular/core';
 import {ActivatedRoute, RouterLink} from '@angular/router';
-import {Generation, Trim} from "../../../../../library/src/models";
+import {Brand, Generation, Trim} from "../../../../../library/src/models";
 import {ApiService} from '../../api.service';
 import {Crumb, NavState} from '../../nav-state';
 import {entitySlug, yearRange} from '../../format';
@@ -49,22 +49,33 @@ export class GenerationComponent implements OnInit {
 
   /**
    * Normally the model page has already published the path, so this only
-   * appends to it. On a direct load of a deep link the path starts empty, and
-   * the model name on the generation record is the most that is known without
-   * another request.
+   * appends to it. On a direct load of a deep link the path starts empty and
+   * has to be rebuilt from the record, which arrives with its model and the
+   * model's brand.
+   *
+   * The links are absolute segment lists, not just a slug: the model route sits
+   * at /browse/:brandId/:modelId, so a one-segment link would be read as a
+   * brand id and land on the wrong page.
    */
   private pathFor(generation: Generation): Crumb[] {
     const self: Crumb = {label: generation.name, link: null};
     const inherited = this.nav.crumbs();
     if (inherited.length > 0) return [...inherited, self];
-    const parent = generation.model;
-    return parent
-      ? [
-          {label: 'Brands', link: ['/browse']},
-          {label: parent.name, link: ['/browse', entitySlug(parent.name, parent.id)]},
-          self,
-        ]
-      : [{label: 'Brands', link: ['/browse']}, self];
+
+    const model = generation.model;
+    if (!model) return [{label: 'Brands', link: ['/browse']}, self];
+    const brand = model.brand;
+    return [
+      {label: 'Brands', link: ['/browse']},
+      ...(brand ? [{label: brand.name, link: ['/browse', entitySlug(brand.name, brand.id)]}] : []),
+      {label: model.name, link: ['/browse', ...this.ancestors(brand), entitySlug(model.name, model.id)]},
+      self,
+    ];
+  }
+
+  /** The brand segments a deeper route has to repeat to stay addressable. */
+  private ancestors(brand: Brand | undefined): string[] {
+    return brand ? [entitySlug(brand.name, brand.id)] : [];
   }
 
   years(start: Date | string | null, end: Date | string | null): string {

@@ -229,9 +229,15 @@ export class FetchProvider {
             where: {
                 id: generationId,
             },
+            // The model carries its brand, and a deep link to a generation has no
+            // other way to name the marque: there is no page above it to inherit
+            // the path from, so a missing brand here shows up as a path that
+            // starts at the model.
             relations: {
                 trims: true,
-                model: true,
+                model: {
+                    brand: true,
+                },
             },
         });
 
@@ -251,8 +257,16 @@ export class FetchProvider {
             where: {
                 id: trimId,
             },
+            // The whole ancestor chain, not just the generation. A deep link to a
+            // trim is the one page with no page above it to inherit a path from,
+            // so anything missing here is a breadcrumb that cannot be rendered
+            // or linked.
             relations: {
-                generation: true,
+                generation: {
+                    model: {
+                        brand: true,
+                    },
+                },
                 trimDetails: true,
             },
         });
@@ -590,9 +604,16 @@ export class FetchProvider {
                 else if (label.includes('front brakes')) trimDetails.frontBrakes = value;
                 else if (label.includes('rear brakes')) trimDetails.rearBrakes = value;
                 else if (label.includes('assisting systems')) {
-                    const systems = Array.from(td.querySelectorAll('br')).map(() => '');
-                    const text = td.innerHTML.replace(/<br\s*\/?>/g, '|').replace(/<[^>]*>/g, '');
-                    trimDetails.assistingSystems = text.replace(/\|/g, ', ').trim();
+                    // The list is <br>-separated inside one cell. Turning each
+                    // break into a separator, then dropping empty entries, is
+                    // what keeps a trailing <br> - which the real pages carry -
+                    // from becoming a value that ends in ", ".
+                    const marked = td.innerHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
+                    trimDetails.assistingSystems = marked
+                        .split('\n')
+                        .map((entry) => entry.replace(/\s+/g, ' ').trim())
+                        .filter((entry) => entry !== '')
+                        .join(', ');
                 } else if (label.includes('steering type') && !label.includes('power')) trimDetails.steeringType = value;
                 else if (label.includes('power steering')) trimDetails.powerSteering = value;
                 // The site labels this "Tire size" now; "Tires size"/"Tyres size" before.

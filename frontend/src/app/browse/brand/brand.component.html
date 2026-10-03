@@ -15,7 +15,9 @@
       </div>
     } @else {
       <div class="page-head__body">
-        <h1 class="display">Loading</h1>
+        <!-- The heading has to change with the state: leaving "Loading" above a
+             failure message reads as a request still in flight. -->
+        <h1 class="display">{{ failed() ? 'Not found' : 'Loading' }}</h1>
       </div>
     }
   </header>
