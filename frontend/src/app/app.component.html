@@ -1,4 +1,29 @@
-<main>
-</main>
+<header class="bar">
+  <a routerLink="/browse" class="mark" aria-label="AutoDataWrapper, all brands">
+    <svg viewBox="0 0 24 24" aria-hidden="true" class="mark__glyph">
+      <path d="M3.5 17a8.5 8.5 0 1 1 17 0" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round"/>
+      <path d="M12 12l4.2-3.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="1.7" fill="currentColor"/>
+    </svg>
+    <span class="mark__name">AutoData<span class="mark__name-rest">Wrapper</span></span>
+  </a>
 
-<router-outlet/>
+  @if (nav.crumbs().length > 0) {
+    <nav class="path" aria-label="Path to this car">
+      @for (crumb of nav.crumbs(); track $index) {
+        <span class="path__item">
+          @if (crumb.link) {
+            <a class="path__crumb" [routerLink]="crumb.link">{{ crumb.label }}</a>
+          } @else {
+            <span class="path__crumb path__crumb--here" aria-current="page">{{ crumb.label }}</span>
+          }
+        </span>
+      }
+    </nav>
+  }
+</header>
+
+<main>
+  <router-outlet/>
+</main>

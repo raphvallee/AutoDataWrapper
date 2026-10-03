@@ -1,7 +1,3 @@
-<a (click)="clicked()" class="brand-item">
-  <div class="logo-container">
-    <img [alt]="item.name + ' logo'" [src]="item.imageUrl || placeholder" (error)="onImageError($event)"
-         class="brand-logo">
-  </div>
-  <p class="brand-name">{{ item.name }}</p>
+<a class="entry" [routerLink]="[slug()]">
+  <span class="entry__name">{{ item.name }}</span>
 </a>

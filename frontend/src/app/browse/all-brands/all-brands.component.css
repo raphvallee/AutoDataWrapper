@@ -1,76 +1,185 @@
-.navigation-bar {
+.index {
+  display: grid;
+  /* The rail is intrinsic: one narrow column of letters. Everything else goes
+     to the body, which is where the 398 brands live. */
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 clamp(1.25rem, 0.4rem + 2vw, 3rem);
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 1.75rem var(--gutter) 6rem;
+  align-items: start;
+}
+
+/* ------------------------------------------------------------- the rail --- */
+
+.rail {
+  position: sticky;
+  /* Clears the fixed page header. */
+  top: calc(var(--bar-h) + 1.75rem);
+  align-self: start;
+}
+
+.rail__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  z-index: 100;
-  border-bottom: 1px solid #dee2e6;
-  margin-bottom: 1rem;
-  transition: all 0.3s ease;
-}
-
-.navigation-bar.floating {
-  position: fixed;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%) translateX(150%);
   flex-direction: column;
-  align-items: center;
-  background-color: rgba(248, 249, 250, 0.9);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem;
-  max-height: 90vh;
-  overflow-y: auto;
-  opacity: 0;
-  transition: transform 0.25s ease-out, opacity 0.25s ease-out, visibility 0s linear 0.25s;
-  visibility: hidden;
+  gap: 0.0625rem;
 }
 
-.navigation-bar.floating.visible {
-  transform: translateY(-50%) translateX(0);
-  opacity: 1;
-  visibility: visible;
-  transition-delay: 0s;
-}
-
-.navigation-bar.floating .nav-letter {
-  font-size: 0.8rem;
-  padding: 0.15rem 0.3rem;
-}
-
-.nav-letter {
-  text-decoration: none;
-  color: #007bff;
-  font-weight: bold;
-  padding: 0.25rem 0.5rem;
+.rail__letter {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 22px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  /* Navigation, so it carries real text contrast rather than the faint tone
+     used for supporting meta. */
+  color: var(--dim);
   border-radius: 4px;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
 }
 
-.nav-letter:hover {
-  background-color: #e9ecef;
+.rail__letter:hover {
+  color: var(--text);
+  background: var(--panel);
 }
 
-.brands-container {
-  padding: 1rem;
+/* The active letter is amber with a filled box: position within a 398-item
+   list, readable without scrolling the list itself. */
+.rail__letter--active {
+  color: var(--signal);
+  background: var(--signal-wash);
+  font-weight: 500;
+}
+
+/* A placeholder letter. Sized to .rail__letter and inert, so the rail keeps its
+   height while the index loads instead of collapsing and shoving the body
+   sideways when the letters arrive. */
+.sk-rail {
+  cursor: default;
+  background-color: var(--panel);
+}
+
+/* One placeholder per brand cell, carrying .entry's padding so the grid rows
+   are the height they will be once the names arrive. The lattice is drawn by
+   the borders around .entries, so this adds no border of its own. The sweep
+   lives on the ::before because the element itself is a padded box, and
+   animating its background would sweep across the padding too. */
+.sk-index-cell {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+}
+
+.sk-index-cell::before {
+  content: '';
+  flex: 1;
+  height: 0.8125rem;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--panel) 25%, var(--raised) 37%, var(--panel) 63%);
+  background-size: 400% 100%;
+  animation: sweep 1.3s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------- the sections -- */
+
+.index__body {
+  min-width: 0;
 }
 
 .letter-section {
-  margin-bottom: 2rem;
-  scroll-margin-top: 2rem;
+  margin-bottom: 2.25rem;
+  /* Anchor jumps must land below the sticky header and the sticky heading. */
+  scroll-margin-top: calc(var(--bar-h) + 3rem);
 }
 
-.letter-header {
-  border-bottom: 2px solid #343a40;
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.letter-brands {
+.letter-head {
+  position: sticky;
+  top: var(--bar-h);
+  z-index: 10;
   display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  justify-content: flex-start;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0 0.5rem;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(var(--bg) 72%, rgba(15, 20, 27, 0));
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.letter-head__key {
+  color: var(--text);
+}
+
+.letter-head__count {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--faint);
+  margin-left: auto;
+  order: 3;
+}
+
+.letter-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+  order: 2;
+}
+
+/* The index reads as one dense mass of flush cells, not a grid of cards: the
+   lattice is drawn by borders, so the short final row of each letter group
+   leaves empty background rather than a filled block. */
+.entries {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  border-top: 1px solid var(--line-soft);
+  border-left: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------ responsive -- */
+
+/* Under the two-column threshold the rail becomes a horizontal strip that stays
+   reachable while the long list scrolls. */
+@media (max-width: 60rem) {
+  .index {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 0.75rem;
+  }
+
+  .rail {
+    top: var(--bar-h);
+    z-index: 20;
+    /* Full-bleed so the strip can scroll to the last letter without the page
+       scrolling under it. */
+    margin: 0 calc(var(--gutter) * -1);
+    padding: 0.5rem var(--gutter);
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rail__list {
+    flex-direction: row;
+    gap: 0.125rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .rail__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .letter-head {
+    top: calc(var(--bar-h) + 2.25rem);
+  }
+
+  .entries {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
 }

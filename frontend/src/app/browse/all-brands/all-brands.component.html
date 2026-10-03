@@ -1,32 +1,84 @@
-<h1>All Brands</h1>
+<div class="index">
+  <aside class="rail" aria-label="Jump to letter">
+    <ol class="rail__list">
+      @for (group of groupedBrands(); track group.letter) {
+        <li>
+          <a
+            class="rail__letter"
+            [class.rail__letter--active]="activeLetter() === group.letter"
+            [attr.aria-current]="activeLetter() === group.letter ? 'true' : null"
+            (click)="jumpTo(group.letter, $event)"
+            [href]="'#' + group.letter"
+          >{{ group.letter }}</a>
+        </li>
+      } @empty {
+        <!-- The rail is a sticky column, so an empty one collapses to nothing
+             and the whole grid shifts sideways when the letters arrive. One
+             placeholder box per letter the real rail will hold. -->
+        @for (placeholder of railPlaceholders; track placeholder) {
+          <li aria-hidden="true">
+            <span class="rail__letter sk-rail"></span>
+          </li>
+        }
+      }
+    </ol>
+  </aside>
 
-<div #navTrigger class="navigation-bar static">
-  @for (letter of letters; track letter) {
-    <a [fragment]="letter" [routerLink]="[]" class="nav-letter">{{ letter }}</a>
-  }
-</div>
-
-<div [class.visible]="isFloating" class="navigation-bar floating">
-  @for (letter of letters; track letter) {
-    <a [fragment]="letter" [routerLink]="[]" class="nav-letter">{{ letter }}</a>
-  }
-</div>
-
-<div class="brands-container">
-  @if (loading) {
-    <p>Fetching brands...</p>
-  } @else if (groupedBrands.length === 0) {
-    <p>No brands found.</p>
-  } @else {
-    @for (group of groupedBrands; track group.letter) {
-      <div [id]="group.letter" class="letter-section">
-        <h2 class="letter-header">{{ group.letter }}</h2>
-        <div class="letter-brands">
-          @for (item of group.brands; track item.id) {
-            <app-allbrands-item [item]="item"/>
-          }
-        </div>
+  <div class="index__body" [attr.aria-busy]="load.busy()">
+    <header class="page-head">
+      <div class="page-head__body">
+        <h1 class="display">All brands</h1>
+        <p class="meta">
+          Every marque in the database. Pick one to list its models.
+        </p>
       </div>
+      @if (!load.busy()) {
+        <p class="page-head__count">{{ total() }} marques</p>
+      }
+    </header>
+
+    <!-- Not a scraping page: the marques are all stored, so a wait here is the
+         database, not a fetch from the source site. -->
+    <app-load-status subject="brand index" [scrapes]="false"/>
+
+    @if (load.visible()) {
+      <!-- The real index groups by letter, so the placeholders do too: a block
+           of unlabelled rows would be replaced by headed sections and the
+           reader would be moved rather than filled in. Each group gets its own
+           bordered lattice, because the real ones are separate too. -->
+      <div aria-hidden="true">
+        @for (group of placeholderGroups; track group) {
+          <section class="letter-section">
+            <h2 class="letter-head">
+              <span class="sk-line sk-line--title sk-line--short"></span>
+            </h2>
+            <div class="entries">
+              @for (cell of group.cells; track cell.id) {
+                <span class="sk-line sk-line--wide sk-index-cell"></span>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    } @else if (total() === 0) {
+      <p class="state">
+        <strong>No brands yet</strong>
+        The database has no marques in it. Add some, then reload.
+      </p>
+    } @else {
+      @for (group of groupedBrands(); track group.letter) {
+        <section [id]="group.letter" class="letter-section">
+          <h2 class="letter-head">
+            <span class="letter-head__key">{{ group.letter }}</span>
+            <span class="letter-head__count figure">{{ group.brands.length }}</span>
+          </h2>
+          <div class="entries">
+            @for (item of group.brands; track item.id) {
+              <app-allbrands-item [item]="item"/>
+            }
+          </div>
+        </section>
+      }
     }
-  }
+  </div>
 </div>

@@ -3,6 +3,7 @@ import type {EntityManager} from "typeorm";
 
 import {Brand, Generation, Model, Trim, TrimDetails} from "../src/entity/entities";
 import {
+    ASSISTING_SYSTEMS_SHAPES,
     BRANDS_WITH_GAPS,
     BRANDS_WITH_IMAGE_URL_SHAPES,
     DETAILS_WITH_GAPS,
@@ -573,6 +574,30 @@ describe("FetchProvider", () => {
             // Rows missing a label or a value are skipped, not guessed at.
             expect(found?.trimDetails?.seats).toBe("");
         });
+
+        // One test per shape rather than one page carrying them all: a page
+        // yields a single value per label, so several rows of the same label
+        // would only ever assert the last one.
+        test.each(ASSISTING_SYSTEMS_SHAPES)(
+            "joins the assisting systems list without stray separators: $expected",
+            async ({html, expected}) => {
+                const {trim} = await seedFullChain();
+                RecordedScraper.serveHtml(`
+                  <div class="cardetailsout">
+                    <div class="cardetails">
+                      <div class="row"><div class="par">Brand</div><div class="val">BMW</div></div>
+                      <div class="row"><div class="par">Assisting systems</div>
+                        <div class="val">${html}</div>
+                      </div>
+                    </div>
+                  </div>
+                `);
+
+                const found = await new FetchProvider().getTrimWithDetails(trim.id);
+
+                expect(found?.trimDetails?.assistingSystems).toBe(expected);
+            },
+        );
 
         test("does not crash when the specification is missing entirely", async () => {
             const {trim} = await seedFullChain();

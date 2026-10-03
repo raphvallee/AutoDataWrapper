@@ -1,1 +1,655 @@
-/* You can add global styles to this file, and also import other style files */
+/* AutoDataWrapper design tokens and shared primitives.
+   Kept global rather than per-component: the build caps component styles at
+   4kB, and the recurring pieces (rows, spec tables, plates, tiles) are shared
+   by several pages. */
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Cool graphite stack. Panels separate by lightness, not by border + shadow. */
+  --bg: #0f141b;
+  --panel: #161d26;
+  --raised: #1d2632;
+  --sunken: #0b0f15;
+
+  --line: #273140;
+  --line-soft: #1e2733;
+
+  --text: #e8edf4;
+  --dim: #9aa7b8;
+  /* Lightened from a dimmer grey that measured 3.9:1 on the page background,
+     under the 4.5:1 needed for small text. Now 5:1. */
+  --faint: #78859a;
+
+  /* Amber instrument signal. Only ever means "active" or "in production". */
+  --signal: #ffb020;
+  --signal-wash: rgba(255, 176, 32, 0.1);
+  --signal-line: rgba(255, 176, 32, 0.32);
+
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  --bar-h: 56px;
+  --gutter: clamp(1rem, 0.4rem + 2.4vw, 2.75rem);
+
+  --ui: 'Archivo', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  /* Anchor jumps must clear the fixed header. */
+  scroll-padding-top: calc(var(--bar-h) + 1.5rem);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+p,
+figure {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Focus is visible everywhere and always amber, so it reads as one system. */
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+::selection {
+  background: var(--signal);
+  color: #0f141b;
+}
+
+/* ---------------------------------------------------------------- type ---- */
+
+.display {
+  font-size: clamp(1.9rem, 1.2rem + 2.4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+}
+
+.subtitle {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+}
+
+.meta {
+  font-size: 0.8125rem;
+  color: var(--dim);
+}
+
+/* Meta items are separated by space alone. A dot between them would be
+   decoration standing in for a gap the layout can express directly. */
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--dim);
+}
+
+/* Values that must line up on the decimal. Never used for labels. */
+.figure {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Present to assistive technology, absent from the visual layout. Used where a
+   status needs to be announced but adds nothing to what is on screen. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Missing source data. A spec sheet states the absence rather than going blank. */
+.absent {
+  color: var(--faint);
+}
+
+/* -------------------------------------------------------- page scaffold ---- */
+
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.25rem var(--gutter) 6rem;
+}
+
+/* The amber rule is the one persistent accent: it marks which level of the
+   drill-down you are on. Structure, not decoration. */
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.125rem;
+  padding-bottom: 1.375rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.page-head::before {
+  content: '';
+  width: 2px;
+  align-self: stretch;
+  flex-shrink: 0;
+  background: var(--signal);
+  border-radius: 2px;
+}
+
+.page-head__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+}
+
+.page-head__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.page-head__mark {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  object-fit: contain;
+  /* Logos are full-colour art on transparent; flattening them to white keeps
+     398 of them from turning the index into confetti. */
+  filter: grayscale(1) brightness(2.2);
+}
+
+.page-head__count {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 0.375rem;
+}
+
+/* ------------------------------------------------------------- states ----- */
+
+.state {
+  padding: 2.75rem 1.5rem;
+  text-align: center;
+  color: var(--dim);
+  background: var(--panel);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+.state strong {
+  display: block;
+  color: var(--text);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+/* A state message sitting inside a two-column readout rather than spanning the
+   page on its own: it fills the column beside the photo instead of dropping
+   the reader below the fold. */
+.state--inline {
+  padding: 1.75rem 1.25rem;
+  text-align: left;
+}
+
+.state--inline .source {
+  white-space: nowrap;
+}
+
+/* Loading keeps the layout stable so nothing jumps when data lands. */
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--panel) 25%, var(--raised) 37%, var(--panel) 63%);
+  background-size: 400% 100%;
+  animation: sweep 1.3s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+
+/* Skeletons are drawn from the same primitives as the real content, so the
+   placeholders share its geometry: a placeholder that is a plain block where
+   the page has a photo, a table or a row of type shifts the layout the moment
+   data lands, which is the opposite of what a placeholder is for.
+
+   The sweep is shared by every primitive rather than living on .skeleton alone,
+   so a placeholder made of several pieces moves as one object instead of
+   leaving one part of itself still. */
+.skeleton,
+.sk-line,
+.sk-thumb,
+.sk-plate {
+  background: linear-gradient(90deg, var(--panel) 25%, var(--raised) 37%, var(--panel) 63%);
+  background-size: 400% 100%;
+  animation: sweep 1.3s ease-in-out infinite;
+}
+
+.sk-plate {
+  /* Blockified for the same reason as .sk-line: an inline box drops its
+     aspect-ratio. */
+  display: block;
+  aspect-ratio: 16 / 10;
+  background-color: var(--sunken);
+}
+
+.sk-line {
+  /* A span is inline, and an inline box ignores height, so a placeholder line
+     inside a <dt>, <td> or heading would collapse to nothing. Blockifying it
+     here means the same class works in any of those containers. */
+  display: block;
+  height: 0.6875rem;
+  border-radius: 3px;
+}
+
+.sk-line--sm {
+  height: 0.5625rem;
+}
+
+.sk-line--title {
+  height: 1.25rem;
+  width: 9rem;
+}
+
+.sk-line--wide {
+  width: 100%;
+}
+
+.sk-line--mid {
+  width: 62%;
+}
+
+.sk-line--short {
+  width: 38%;
+}
+
+/* A stand-in for the leading image on a model row. Fixed to the same 116x72 the
+   real thumbnail uses, so the name beside it starts in the same place in both
+   states and the row does not change height when data lands. */
+.sk-thumb {
+  display: block;
+  width: 116px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  background-color: var(--sunken);
+}
+
+/* A placeholder row borrows the real row's geometry but none of its
+   behaviour: it is not clickable, and a pointer cursor or a hover highlight on
+   something that goes nowhere is a promise the page cannot keep. */
+.sk-row {
+  cursor: default;
+}
+
+.sk-row:hover {
+  background: none;
+}
+
+/* A stand-in row for the spec sheet: label on the left, value right-aligned,
+   the same two columns the real table uses. */
+.sk-spec-row {
+  display: grid;
+  grid-template-columns: 1fr 9rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.sk-spec-row .sk-line:last-child {
+  justify-self: end;
+  width: 100%;
+}
+
+/* ------------------------------------------------------- production mark -- */
+
+/* Amber = still built. Hollow = finished. One hue pair, no red/green. */
+.prod {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--faint);
+}
+
+.prod::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+}
+
+.prod--live {
+  color: var(--signal);
+}
+
+.prod--live::before {
+  background: var(--signal);
+  border-color: var(--signal);
+  box-shadow: 0 0 0 3px var(--signal-wash);
+}
+
+/* ----------------------------------------------------------- model rows -- */
+
+.rows {
+  border-top: 1px solid var(--line);
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.6875rem 0.75rem;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  transition: background 0.15s var(--ease);
+}
+
+.row:hover {
+  background: var(--panel);
+}
+
+/* The amber tick marks the row under the pointer without shifting the layout. */
+.row__mark {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 1.75rem;
+  margin-top: -0.875rem;
+  background: var(--signal);
+  border-radius: 0 2px 2px 0;
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+}
+
+.row:hover .row__mark {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.row__thumb {
+  width: 116px;
+  height: 72px;
+  object-fit: cover;
+  background: var(--sunken);
+  border-radius: var(--radius-sm);
+}
+
+.row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.row__name {
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+}
+
+.row__aside {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.row__years {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------- spec tables --- */
+
+.sheet {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sheet th,
+.sheet td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: baseline;
+}
+
+.sheet thead th {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+  border-bottom-color: var(--line);
+  white-space: nowrap;
+}
+
+.sheet tbody tr {
+  transition: background 0.15s var(--ease);
+}
+
+.sheet tbody tr:hover {
+  background: var(--panel);
+}
+
+.sheet__label {
+  font-size: 0.8125rem;
+  color: var(--dim);
+  font-weight: 400;
+}
+
+.sheet__value {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet__row-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* Fixed layout with every column given a width. Generation names run long
+   ("Alfa Romeo 145 (930, facelift 1999)") and, in an auto table, that string
+   starves the other columns and wraps to one word per line. */
+.sheet--gens {
+  table-layout: fixed;
+}
+
+.sheet__col-name {
+  width: auto;
+}
+
+.sheet__col-narrow {
+  width: 9rem;
+}
+
+.sheet__col-years {
+  width: 10rem;
+}
+
+/* The fixed columns are sized for the desktop table. At phone width they would
+   leave the generation name a couple of characters wide, so they tighten and
+   the name column takes the difference. The name is the thing being read and
+   the other two columns are short fixed vocabulary ("Hatchback", "1999 – 2000"),
+   so they give up width first and shrink a step in type rather than squeezing
+   the name further. */
+@media (max-width: 44rem) {
+  .sheet--gens {
+    width: 100%;
+  }
+
+  .sheet__col-narrow {
+    width: 4.5rem;
+  }
+
+  .sheet__col-years {
+    width: 5.75rem;
+  }
+
+  .sheet--gens th,
+  .sheet--gens td {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* -------------------------------------------------------------- tiles ----- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  /* A border lattice rather than a gap over a tinted background: with
+     auto-fill the last row is usually short, and a gap-filled grid paints the
+     empty remainder as one solid block that reads as a rendering fault. */
+  border-top: 1px solid var(--line-soft);
+  border-left: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.15s var(--ease);
+}
+
+.tile:hover {
+  background: var(--panel);
+}
+
+.tile__plate {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--sunken);
+}
+
+.tile__plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s var(--ease);
+}
+
+.tile:hover .tile__plate img {
+  transform: scale(1.035);
+}
+
+.tile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  padding: 0.75rem 0.875rem 0.875rem;
+}
+
+.tile__name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------ reduced motion ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* The sweep is the only thing distinguishing a placeholder from an empty
+     panel, and reduced motion removes it. A static tone alone leaves the page
+     looking unfinished, so the placeholders keep a visible border instead. */
+  .skeleton,
+  .sk-line,
+  .sk-thumb,
+  .sk-plate,
+  .sk-index-cell::before {
+    animation: none !important;
+    background: var(--panel);
+    outline: 1px solid var(--line-soft);
+    outline-offset: -1px;
+  }
+
+  /* The placeholder cell is a padded box with a ::before doing the visible
+     work, so the outline belongs on that ::before rather than the box. */
+  .sk-index-cell {
+    background: none;
+    outline: none;
+  }
+}
