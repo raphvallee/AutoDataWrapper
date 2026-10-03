@@ -137,6 +137,20 @@ button {
   letter-spacing: -0.02em;
 }
 
+/* Present to assistive technology, absent from the visual layout. Used where a
+   status needs to be announced but adds nothing to what is on screen. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Missing source data. A spec sheet states the absence rather than going blank. */
 .absent {
   color: var(--faint);
@@ -249,6 +263,99 @@ button {
   to {
     background-position: 0 50%;
   }
+}
+
+/* Skeletons are drawn from the same primitives as the real content, so the
+   placeholders share its geometry: a placeholder that is a plain block where
+   the page has a photo, a table or a row of type shifts the layout the moment
+   data lands, which is the opposite of what a placeholder is for.
+
+   The sweep is shared by every primitive rather than living on .skeleton alone,
+   so a placeholder made of several pieces moves as one object instead of
+   leaving one part of itself still. */
+.skeleton,
+.sk-line,
+.sk-thumb,
+.sk-plate {
+  background: linear-gradient(90deg, var(--panel) 25%, var(--raised) 37%, var(--panel) 63%);
+  background-size: 400% 100%;
+  animation: sweep 1.3s ease-in-out infinite;
+}
+
+.sk-plate {
+  /* Blockified for the same reason as .sk-line: an inline box drops its
+     aspect-ratio. */
+  display: block;
+  aspect-ratio: 16 / 10;
+  background-color: var(--sunken);
+}
+
+.sk-line {
+  /* A span is inline, and an inline box ignores height, so a placeholder line
+     inside a <dt>, <td> or heading would collapse to nothing. Blockifying it
+     here means the same class works in any of those containers. */
+  display: block;
+  height: 0.6875rem;
+  border-radius: 3px;
+}
+
+.sk-line--sm {
+  height: 0.5625rem;
+}
+
+.sk-line--title {
+  height: 1.25rem;
+  width: 9rem;
+}
+
+.sk-line--wide {
+  width: 100%;
+}
+
+.sk-line--mid {
+  width: 62%;
+}
+
+.sk-line--short {
+  width: 38%;
+}
+
+/* A stand-in for the leading image on a model row. Fixed to the same 116x72 the
+   real thumbnail uses, so the name beside it starts in the same place in both
+   states and the row does not change height when data lands. */
+.sk-thumb {
+  display: block;
+  width: 116px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  background-color: var(--sunken);
+}
+
+/* A placeholder row borrows the real row's geometry but none of its
+   behaviour: it is not clickable, and a pointer cursor or a hover highlight on
+   something that goes nowhere is a promise the page cannot keep. */
+.sk-row {
+  cursor: default;
+}
+
+.sk-row:hover {
+  background: none;
+}
+
+/* A stand-in row for the spec sheet: label on the left, value right-aligned,
+   the same two columns the real table uses. */
+.sk-spec-row {
+  display: grid;
+  grid-template-columns: 1fr 9rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.sk-spec-row .sk-line:last-child {
+  justify-self: end;
+  width: 100%;
 }
 
 /* ------------------------------------------------------- production mark -- */
@@ -523,5 +630,26 @@ button {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* The sweep is the only thing distinguishing a placeholder from an empty
+     panel, and reduced motion removes it. A static tone alone leaves the page
+     looking unfinished, so the placeholders keep a visible border instead. */
+  .skeleton,
+  .sk-line,
+  .sk-thumb,
+  .sk-plate,
+  .sk-index-cell::before {
+    animation: none !important;
+    background: var(--panel);
+    outline: 1px solid var(--line-soft);
+    outline-offset: -1px;
+  }
+
+  /* The placeholder cell is a padded box with a ::before doing the visible
+     work, so the outline belongs on that ::before rather than the box. */
+  .sk-index-cell {
+    background: none;
+    outline: none;
   }
 }

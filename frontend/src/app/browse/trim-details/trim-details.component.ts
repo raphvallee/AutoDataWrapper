@@ -3,11 +3,13 @@ import {ActivatedRoute} from '@angular/router';
 import {Trim, TrimDetails} from "../../../../../library/src/models";
 import {ApiService} from '../../api.service';
 import {Crumb, NavState} from '../../nav-state';
+import {LoadState} from '../../load-state';
 import {SpecGroup, entitySlug, groupDetails, headlineFigures, yearRange} from '../../format';
+import {LoadStatusComponent} from '../load-status/load-status.component';
 
 @Component({
   selector: 'app-trim',
-  imports: [],
+  imports: [LoadStatusComponent],
   templateUrl: './trim-details.component.html',
   styleUrl: './trim-details.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,9 +18,9 @@ export class TrimDetailsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(ApiService);
   private readonly nav = inject(NavState);
+  readonly load = inject(LoadState);
 
   readonly trim = signal<Trim | null>(null);
-  readonly loading = signal(true);
   readonly failed = signal(false);
 
   readonly figures = signal<{ label: string; value: string }[]>([]);
@@ -28,9 +30,9 @@ export class TrimDetailsComponent implements OnInit {
   readonly photo = signal(0);
 
   async ngOnInit() {
-    this.loading.set(true);
     this.failed.set(false);
     this.nav.set([]);
+    const token = this.load.begin();
     try {
       const segment: string = this.route.snapshot.params['trimId'];
       const trimId = parseInt(segment.split('-')[1], 10);
@@ -49,7 +51,7 @@ export class TrimDetailsComponent implements OnInit {
     } catch {
       this.failed.set(true);
     } finally {
-      this.loading.set(false);
+      this.load.end(token);
     }
   }
 

@@ -4,10 +4,12 @@ import {ApiService} from '../../api.service';
 import {Brand, Model} from '../../../../../library/src/models';
 import {BrandItemComponent} from './brand-item/brand-item.component';
 import {NavState} from '../../nav-state';
+import {LoadState} from '../../load-state';
+import {LoadStatusComponent} from '../load-status/load-status.component';
 
 @Component({
   selector: 'app-brand',
-  imports: [BrandItemComponent],
+  imports: [BrandItemComponent, LoadStatusComponent],
   templateUrl: './brand.component.html',
   styleUrl: './brand.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -17,16 +19,16 @@ export class BrandComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
   private readonly nav = inject(NavState);
+  readonly load = inject(LoadState);
 
   readonly brand = signal<Brand | null>(null);
   readonly models = signal<Model[]>([]);
-  readonly loading = signal(true);
   readonly failed = signal(false);
 
   async ngOnInit() {
-    this.loading.set(true);
     this.failed.set(false);
     this.nav.set([]);
+    const token = this.load.begin();
     try {
       const segment: string = this.route.snapshot.params['brandId'];
       const brandId = parseInt(segment.split('-')[1], 10);
@@ -47,7 +49,7 @@ export class BrandComponent implements OnInit {
     } catch {
       this.failed.set(true);
     } finally {
-      this.loading.set(false);
+      this.load.end(token);
     }
   }
 }

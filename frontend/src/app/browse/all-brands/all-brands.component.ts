@@ -13,6 +13,8 @@ import {ApiService} from '../../api.service';
 import {AllBrandsItemComponent} from './all-brands-item/all-brands-item.component';
 import {Brand} from '../../../../../library/src/models';
 import {NavState} from '../../nav-state';
+import {LoadState} from '../../load-state';
+import {LoadStatusComponent} from '../load-status/load-status.component';
 
 interface GroupedBrands {
   letter: string;
@@ -21,7 +23,7 @@ interface GroupedBrands {
 
 @Component({
   selector: 'app-brands',
-  imports: [AllBrandsItemComponent, RouterModule],
+  imports: [AllBrandsItemComponent, RouterModule, LoadStatusComponent],
   templateUrl: './all-brands.component.html',
   styleUrl: './all-brands.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,8 +31,8 @@ interface GroupedBrands {
 export class AllBrandsComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly nav = inject(NavState);
+  readonly load = inject(LoadState);
 
-  readonly loading = signal(true);
   readonly groupedBrands = signal<GroupedBrands[]>([]);
   readonly activeLetter = signal<string | null>(null);
 
@@ -40,17 +42,37 @@ export class AllBrandsComponent implements OnInit, OnDestroy {
 
   private observer: IntersectionObserver | null = null;
 
+  /** One per letter the real rail holds, so its height is reserved up front. */
+  readonly railPlaceholders = Array.from({length: 27}, (_, i) => i);
+
+/**
+ * Placeholder letter groups, sized to the real distribution: the index runs
+ * from one marque under "2" to thirty-odd under "A", so a uniform block of
+ * rows would be a different height from what replaces it. These are the real
+ * per-letter counts for the sections at the top of the page, which is where
+ * its height is decided.
+ *
+ * Each group carries its own cells rather than a row count the template counts
+ * up to: a repeater over a bare number array rendered nothing here, and the
+ * cells are what the template actually iterates.
+ */
+readonly placeholderGroups = [1, 12, 8, 9, 7].map((count, group) => ({
+  id: group,
+  count,
+  cells: Array.from({length: count}, (_, i) => ({id: `${group}-${i}`})),
+}));
+
   ngOnInit(): void {
     this.nav.set([]);
-    void this.load();
+    void this.fetchBrands();
   }
 
   ngOnDestroy(): void {
     this.observer?.disconnect();
   }
 
-  private async load(): Promise<void> {
-    this.loading.set(true);
+  private async fetchBrands(): Promise<void> {
+    const token = this.load.begin();
     try {
       this.groupedBrands.set(this.group(await this.api.getAllBrands()));
       // Observed after the sections exist, and after a frame so the browser has
@@ -58,7 +80,7 @@ export class AllBrandsComponent implements OnInit, OnDestroy {
       // height and pick the wrong active letter.
       queueMicrotask(() => this.watchSections());
     } finally {
-      this.loading.set(false);
+      this.load.end(token);
     }
   }
 

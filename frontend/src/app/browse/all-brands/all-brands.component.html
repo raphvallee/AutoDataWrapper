@@ -11,11 +11,20 @@
             [href]="'#' + group.letter"
           >{{ group.letter }}</a>
         </li>
+      } @empty {
+        <!-- The rail is a sticky column, so an empty one collapses to nothing
+             and the whole grid shifts sideways when the letters arrive. One
+             placeholder box per letter the real rail will hold. -->
+        @for (placeholder of railPlaceholders; track placeholder) {
+          <li aria-hidden="true">
+            <span class="rail__letter sk-rail"></span>
+          </li>
+        }
       }
     </ol>
   </aside>
 
-  <div class="index__body">
+  <div class="index__body" [attr.aria-busy]="load.busy()">
     <header class="page-head">
       <div class="page-head__body">
         <h1 class="display">All brands</h1>
@@ -23,15 +32,32 @@
           Every marque in the database. Pick one to list its models.
         </p>
       </div>
-      @if (!loading()) {
+      @if (!load.busy()) {
         <p class="page-head__count">{{ total() }} marques</p>
       }
     </header>
 
-    @if (loading()) {
-      <div class="entries">
-        @for (placeholder of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; track placeholder) {
-          <div class="skeleton" style="height: 3rem"></div>
+    <!-- Not a scraping page: the marques are all stored, so a wait here is the
+         database, not a fetch from the source site. -->
+    <app-load-status subject="brand index" [scrapes]="false"/>
+
+    @if (load.visible()) {
+      <!-- The real index groups by letter, so the placeholders do too: a block
+           of unlabelled rows would be replaced by headed sections and the
+           reader would be moved rather than filled in. Each group gets its own
+           bordered lattice, because the real ones are separate too. -->
+      <div aria-hidden="true">
+        @for (group of placeholderGroups; track group) {
+          <section class="letter-section">
+            <h2 class="letter-head">
+              <span class="sk-line sk-line--title sk-line--short"></span>
+            </h2>
+            <div class="entries">
+              @for (cell of group.cells; track cell.id) {
+                <span class="sk-line sk-line--wide sk-index-cell"></span>
+              }
+            </div>
+          </section>
         }
       </div>
     } @else if (total() === 0) {

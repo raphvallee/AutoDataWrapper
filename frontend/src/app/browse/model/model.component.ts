@@ -3,11 +3,13 @@ import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {Generation, Model} from "../../../../../library/src/models";
 import {ApiService} from '../../api.service';
 import {Crumb, NavState} from '../../nav-state';
+import {LoadState} from '../../load-state';
 import {entitySlug, yearRange} from '../../format';
+import {LoadStatusComponent} from '../load-status/load-status.component';
 
 @Component({
   selector: 'app-model',
-  imports: [RouterLink],
+  imports: [RouterLink, LoadStatusComponent],
   templateUrl: './model.component.html',
   styleUrl: './model.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -17,19 +19,19 @@ export class ModelComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
   private readonly nav = inject(NavState);
+  readonly load = inject(LoadState);
 
   readonly model = signal<Model | null>(null);
   readonly generations = signal<Generation[]>([]);
-  readonly loading = signal(true);
   readonly failed = signal(false);
 
   /** Prebuilt so a row can link without re-deriving its own slug. */
   readonly slugs = signal<Map<number, string>>(new Map());
 
   async ngOnInit() {
-    this.loading.set(true);
     this.failed.set(false);
     this.nav.set([]);
+    const token = this.load.begin();
     try {
       const segment: string = this.route.snapshot.params['modelId'];
       const modelId = parseInt(segment.split('-')[1], 10);
@@ -53,7 +55,7 @@ export class ModelComponent implements OnInit {
     } catch {
       this.failed.set(true);
     } finally {
-      this.loading.set(false);
+      this.load.end(token);
     }
   }
 

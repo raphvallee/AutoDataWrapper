@@ -1,4 +1,4 @@
-<div class="page">
+<div class="page" [attr.aria-busy]="load.busy()">
   <header class="page-head">
     @if (model(); as m) {
       <div class="page-head__body">
@@ -13,12 +13,39 @@
         <!-- The heading has to change with the state: leaving "Loading" above a
              failure message reads as a request still in flight. -->
         <h1 class="display">{{ failed() ? 'Not found' : 'Loading' }}</h1>
+        <!-- Inside the heading's own column: as a sibling it becomes another
+             flex item of the page head and lands beside the title. -->
+        <app-load-status [subject]="model()?.name ?? ''"/>
       </div>
     }
   </header>
 
-  @if (loading()) {
-    <div class="skeleton" style="height: 14rem"></div>
+  @if (load.visible()) {
+    <!-- The real list is a three-column table, so the placeholders are its
+         columns rather than a block of fixed height. -->
+    <table class="sheet sheet--gens" aria-hidden="true">
+      <colgroup>
+        <col class="sheet__col-name"/>
+        <col class="sheet__col-narrow"/>
+        <col class="sheet__col-years"/>
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col">Generation</th>
+          <th scope="col">Body</th>
+          <th scope="col">Years</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <tr>
+            <td><span class="sk-line sk-line--wide"></span></td>
+            <td><span class="sk-line sk-line--mid"></span></td>
+            <td><span class="sk-line sk-line--mid"></span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
   } @else if (failed()) {
     <p class="state">
       <strong>We could not load that model</strong>

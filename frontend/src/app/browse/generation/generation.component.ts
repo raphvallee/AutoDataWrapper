@@ -3,11 +3,13 @@ import {ActivatedRoute, RouterLink} from '@angular/router';
 import {Brand, Generation, Trim} from "../../../../../library/src/models";
 import {ApiService} from '../../api.service';
 import {Crumb, NavState} from '../../nav-state';
+import {LoadState} from '../../load-state';
 import {entitySlug, yearRange} from '../../format';
+import {LoadStatusComponent} from '../load-status/load-status.component';
 
 @Component({
   selector: 'app-generation',
-  imports: [RouterLink],
+  imports: [RouterLink, LoadStatusComponent],
   templateUrl: './generation.component.html',
   styleUrl: './generation.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,17 +18,17 @@ export class GenerationComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(ApiService);
   private readonly nav = inject(NavState);
+  readonly load = inject(LoadState);
 
   readonly generation = signal<Generation | null>(null);
   readonly trims = signal<Trim[]>([]);
-  readonly loading = signal(true);
   readonly failed = signal(false);
   readonly slugs = signal<Map<number, string>>(new Map());
 
   async ngOnInit() {
-    this.loading.set(true);
     this.failed.set(false);
     this.nav.set([]);
+    const token = this.load.begin();
     try {
       const segment: string = this.route.snapshot.params['generationId'];
       const generationId = parseInt(segment.split('-')[1], 10);
@@ -43,7 +45,7 @@ export class GenerationComponent implements OnInit {
     } catch {
       this.failed.set(true);
     } finally {
-      this.loading.set(false);
+      this.load.end(token);
     }
   }
 

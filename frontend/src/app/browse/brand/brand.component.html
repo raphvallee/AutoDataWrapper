@@ -1,4 +1,4 @@
-<div class="page">
+<div class="page" [attr.aria-busy]="load.busy()">
   <header class="page-head">
     @if (brand(); as b) {
       @if (b.imageUrl) {
@@ -18,14 +18,28 @@
         <!-- The heading has to change with the state: leaving "Loading" above a
              failure message reads as a request still in flight. -->
         <h1 class="display">{{ failed() ? 'Not found' : 'Loading' }}</h1>
+        <!-- Inside the heading's own column: as a sibling it becomes another
+             flex item of the page head and lands beside the title. -->
+        <app-load-status [subject]="brand()?.name ?? ''"/>
       </div>
     }
   </header>
 
-  @if (loading()) {
-    <div class="rows">
+  @if (load.visible()) {
+    <!-- The real list is image-led rows, so each placeholder is a row with the
+         picture column and both text lines in place. -->
+    <div class="rows" aria-hidden="true">
       @for (placeholder of [1, 2, 3, 4, 5, 6, 7]; track placeholder) {
-        <div class="skeleton" style="height: 5.5rem"></div>
+        <div class="row sk-row">
+          <span class="sk-thumb"></span>
+          <span class="row__body">
+            <span class="sk-line sk-line--mid"></span>
+            <span class="sk-line sk-line--sm sk-line--short"></span>
+          </span>
+          <span class="row__aside">
+            <span class="sk-line sk-line--sm sk-line--short"></span>
+          </span>
+        </div>
       }
     </div>
   } @else if (failed()) {

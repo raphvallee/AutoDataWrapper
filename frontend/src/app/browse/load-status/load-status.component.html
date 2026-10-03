@@ -1,0 +1,12 @@
+<p class="load-status" role="status" aria-live="polite">
+  @if (load.visible()) {
+    @if (announce()) {
+      <span class="load-status__text">{{ message() }}</span>
+    } @else {
+      <span class="sr-only">{{ message() }}</span>
+    }
+    @if (showClock()) {
+      <span class="load-status__clock figure" aria-hidden="true">{{ elapsed() }}</span>
+    }
+  }
+</p>

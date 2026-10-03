@@ -1,4 +1,4 @@
-<div class="page">
+<div class="page" [attr.aria-busy]="load.busy()">
   <header class="page-head">
     @if (trim(); as t) {
       <div class="page-head__body">
@@ -22,13 +22,52 @@
         <!-- The heading has to change with the state: leaving "Loading" above a
              failure message reads as a request still in flight. -->
         <h1 class="display">{{ failed() ? 'Not found' : 'Loading' }}</h1>
+        <!-- Inside the heading's own column: as a sibling it becomes another
+             flex item of the page head and lands beside the title. -->
+        <app-load-status [subject]="trim()?.name ?? ''"/>
       </div>
     }
   </header>
 
-  @if (loading()) {
-    <div class="skeleton" style="height: 6rem; margin-bottom: 2rem"></div>
-    <div class="skeleton" style="height: 20rem"></div>
+  @if (load.visible()) {
+    <!-- Shaped like the real page: the headline figures, then the photo beside
+         the spec tables. A pair of grey blocks of arbitrary height would be
+         replaced by something a different size, which is a jump, not a
+         placeholder. -->
+    <dl class="figures">
+      @for (placeholder of [1, 2, 3, 4, 5]; track placeholder) {
+        <div class="figures__cell">
+          <dt><span class="sk-line sk-line--sm sk-line--short"></span></dt>
+          <dd><span class="sk-line sk-line--title"></span></dd>
+        </div>
+      }
+    </dl>
+
+    <div class="readout">
+      <section class="plate" aria-hidden="true">
+        <div class="sk-plate"></div>
+      </section>
+      <div class="groups">
+        <section class="group">
+          <h2 class="group__title"><span class="sk-line sk-line--mid"></span></h2>
+          @for (row of [1, 2, 3, 4, 5, 6, 7]; track row) {
+            <div class="sk-spec-row" aria-hidden="true">
+              <span class="sk-line sk-line--short"></span>
+              <span class="sk-line"></span>
+            </div>
+          }
+        </section>
+        <section class="group">
+          <h2 class="group__title"><span class="sk-line sk-line--mid"></span></h2>
+          @for (row of [1, 2, 3, 4, 5, 6, 7]; track row) {
+            <div class="sk-spec-row" aria-hidden="true">
+              <span class="sk-line sk-line--short"></span>
+              <span class="sk-line"></span>
+            </div>
+          }
+        </section>
+      </div>
+    </div>
   } @else if (failed()) {
     <p class="state">
       <strong>We could not load that trim</strong>

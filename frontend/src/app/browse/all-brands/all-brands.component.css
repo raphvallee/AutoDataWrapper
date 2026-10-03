@@ -55,6 +55,35 @@
   font-weight: 500;
 }
 
+/* A placeholder letter. Sized to .rail__letter and inert, so the rail keeps its
+   height while the index loads instead of collapsing and shoving the body
+   sideways when the letters arrive. */
+.sk-rail {
+  cursor: default;
+  background-color: var(--panel);
+}
+
+/* One placeholder per brand cell, carrying .entry's padding so the grid rows
+   are the height they will be once the names arrive. The lattice is drawn by
+   the borders around .entries, so this adds no border of its own. The sweep
+   lives on the ::before because the element itself is a padded box, and
+   animating its background would sweep across the padding too. */
+.sk-index-cell {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+}
+
+.sk-index-cell::before {
+  content: '';
+  flex: 1;
+  height: 0.8125rem;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--panel) 25%, var(--raised) 37%, var(--panel) 63%);
+  background-size: 400% 100%;
+  animation: sweep 1.3s ease-in-out infinite;
+}
+
 /* ---------------------------------------------------------- the sections -- */
 
 .index__body {
