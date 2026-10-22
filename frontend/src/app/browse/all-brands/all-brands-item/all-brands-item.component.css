@@ -1,39 +1,32 @@
-.brand-item {
+.entry {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  text-decoration: none;
-  color: inherit;
+  /* Flush cells inside the .entries lattice, so no radius or border of its own. */
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
-  padding: 0.5rem 0.5rem 0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: #fff;
-  transition: box-shadow 0.2s;
-  width: 100px;
+  transition: background 0.15s var(--ease);
 }
 
-.brand-item:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.entry:hover {
+  background: var(--panel);
 }
 
-.logo-container {
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.25rem;
+/*
+ * No logo here on purpose. At index size a marque mark lands around 30px, which
+ * is too small to identify most badges and duplicates what the name already
+ * says, so 398 of them were decoration competing with the text. The logo earns
+ * its place on the brand page, where it is rendered large enough to read.
+ */
+.entry__name {
+  font-size: 0.8125rem;
+  color: var(--dim);
+  line-height: 1.35;
+  /* Long marques wrap to two lines rather than truncate: a truncated name is
+     useless in an index whose whole job is recognising names. */
+  overflow-wrap: anywhere;
+  transition: color 0.15s var(--ease);
 }
 
-.brand-logo {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.brand-name {
-  margin: 0;
-  font-weight: bold;
-  text-align: center;
+.entry:hover .entry__name {
+  color: var(--text);
 }

@@ -1,41 +1,75 @@
-import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
-import {ApiService} from '../../api.service';
+import {ChangeDetectionStrategy, Component, OnInit, inject, signal} from '@angular/core';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {Generation, Model} from "../../../../../library/src/models";
-import {ModelItemComponent} from './model-item/model-item.component';
+import {ApiService} from '../../api.service';
+import {Crumb, NavState} from '../../nav-state';
+import {LoadState} from '../../load-state';
+import {entitySlug, yearRange} from '../../format';
+import {LoadStatusComponent} from '../load-status/load-status.component';
 
 @Component({
   selector: 'app-model',
-  imports: [
-    ModelItemComponent
-  ],
+  imports: [RouterLink, LoadStatusComponent],
   templateUrl: './model.component.html',
   styleUrl: './model.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ModelComponent implements OnInit {
-  model: Model | undefined;
-  generations: Generation[] = [];
-  loading = true;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly api = inject(ApiService);
+  private readonly nav = inject(NavState);
+  readonly load = inject(LoadState);
 
-  constructor(private route: ActivatedRoute, public api: ApiService, public router: Router, private changeDetector: ChangeDetectorRef) {
-  }
+  readonly model = signal<Model | null>(null);
+  readonly generations = signal<Generation[]>([]);
+  readonly failed = signal(false);
+
+  /** Prebuilt so a row can link without re-deriving its own slug. */
+  readonly slugs = signal<Map<number, string>>(new Map());
 
   async ngOnInit() {
-    this.loading = true;
+    this.failed.set(false);
+    this.nav.set([]);
+    const token = this.load.begin();
     try {
-      let modelUrl: string = this.route.snapshot.params["modelId"];
-      let modelId: number = parseInt(modelUrl.split("-")[1]);
-      let tempModel: Model = await this.api.getModelWithGenerations(modelId);
-      if (tempModel == null) {
-        console.log(`no model found for: ${modelUrl}`);
-        await this.router.navigate([""]);
+      const segment: string = this.route.snapshot.params['modelId'];
+      const modelId = parseInt(segment.split('-')[1], 10);
+      const loaded = await this.api.getModelWithGenerations(modelId);
+      if (!loaded) {
+        this.failed.set(true);
+        return;
       }
-      this.generations = tempModel!.generations;
-      tempModel!.generations = [];
-      this.model = tempModel!;
+      const generations = loaded.generations ?? [];
+      this.generations.set(generations);
+      this.slugs.set(new Map(generations.map((g) => [g.id, entitySlug(g.name, g.id)])));
+      this.model.set({...loaded, generations: []});
+
+      const brand = loaded.brand;
+      const crumbs: Crumb[] = [{label: 'Brands', link: ['/browse']}];
+      if (brand) {
+        crumbs.push({label: brand.name, link: ['/browse', entitySlug(brand.name, brand.id)]});
+      }
+      crumbs.push({label: loaded.name, link: null});
+      this.nav.set(crumbs);
+    } catch {
+      this.failed.set(true);
     } finally {
-      this.loading = false;
-      this.changeDetector.detectChanges();
+      this.load.end(token);
     }
+  }
+
+  /**
+   * Clicks anywhere in the row navigate, except on the anchor itself: that one
+   * carries its own routerLink, and letting both handle the same click would
+   * start two navigations.
+   */
+  open(event: Event, slug: string): void {
+    if ((event.target as Element).closest('a')) return;
+    void this.router.navigate([slug], {relativeTo: this.route});
+  }
+
+  years(start: Date | string | null, end: Date | string | null): string {
+    return yearRange(start, end);
   }
 }

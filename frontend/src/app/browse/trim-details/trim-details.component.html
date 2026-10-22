@@ -1,6 +1,149 @@
-<p>trim works!</p>
+<div class="page" [attr.aria-busy]="load.busy()">
+  <header class="page-head">
+    @if (trim(); as t) {
+      <div class="page-head__body">
+        <h1 class="display">{{ t.name }}</h1>
+        <p class="meta-line">
+          @if (details(); as d) {
+            <span>{{ d.bodyType || 'Body not recorded' }}</span>
+            @if (d.engineDisplacement) {
+              <span>{{ d.engineDisplacement }}</span>
+            }
+          }
+          <span>{{ years }}</span>
+          @if (t.url) {
+            <a class="source" [href]="'https://www.auto-data.net/en/' + t.url" target="_blank"
+               rel="noopener noreferrer">Source page</a>
+          }
+        </p>
+      </div>
+    } @else {
+      <div class="page-head__body">
+        <!-- The heading has to change with the state: leaving "Loading" above a
+             failure message reads as a request still in flight. -->
+        <h1 class="display">{{ failed() ? 'Not found' : 'Loading' }}</h1>
+        <!-- Inside the heading's own column: as a sibling it becomes another
+             flex item of the page head and lands beside the title. -->
+        <app-load-status [subject]="trim()?.name ?? ''"/>
+      </div>
+    }
+  </header>
 
-<p>Name: {{ trim?.name }}</p>
-<p>Url: {{ trim?.url }}</p>
-<p>startYear: {{ trim?.startYear }}</p>
-<p>endYear: {{ trim?.endYear }}</p>
+  @if (load.visible()) {
+    <!-- Shaped like the real page: the headline figures, then the photo beside
+         the spec tables. A pair of grey blocks of arbitrary height would be
+         replaced by something a different size, which is a jump, not a
+         placeholder. -->
+    <dl class="figures">
+      @for (placeholder of [1, 2, 3, 4, 5]; track placeholder) {
+        <div class="figures__cell">
+          <dt><span class="sk-line sk-line--sm sk-line--short"></span></dt>
+          <dd><span class="sk-line sk-line--title"></span></dd>
+        </div>
+      }
+    </dl>
+
+    <div class="readout">
+      <section class="plate" aria-hidden="true">
+        <div class="sk-plate"></div>
+      </section>
+      <div class="groups">
+        <section class="group">
+          <h2 class="group__title"><span class="sk-line sk-line--mid"></span></h2>
+          @for (row of [1, 2, 3, 4, 5, 6, 7]; track row) {
+            <div class="sk-spec-row" aria-hidden="true">
+              <span class="sk-line sk-line--short"></span>
+              <span class="sk-line"></span>
+            </div>
+          }
+        </section>
+        <section class="group">
+          <h2 class="group__title"><span class="sk-line sk-line--mid"></span></h2>
+          @for (row of [1, 2, 3, 4, 5, 6, 7]; track row) {
+            <div class="sk-spec-row" aria-hidden="true">
+              <span class="sk-line sk-line--short"></span>
+              <span class="sk-line"></span>
+            </div>
+          }
+        </section>
+      </div>
+    </div>
+  } @else if (failed()) {
+    <p class="state">
+      <strong>We could not load that trim</strong>
+      Nothing in the database matches this address.
+    </p>
+  } @else {
+    <!-- The five numbers that answer "what is this car". The one moment on the
+         site given a deliberate entrance, because it is the reason to be here. -->
+    @if (figures().length > 0) {
+      <dl class="figures">
+        @for (figure of figures(); track figure.label) {
+          <div class="figures__cell">
+            <dt class="figures__label">{{ figure.label }}</dt>
+            <dd class="figures__value">{{ figure.value }}</dd>
+          </div>
+        }
+      </dl>
+    }
+
+    <div class="readout">
+      <section class="plate" aria-label="Photos">
+        @if (photos.length > 0) {
+          <div class="plate__main">
+            <img [alt]="trim()?.name ?? ''" [src]="photos[photo()]" (error)="onImageError($event)"/>
+          </div>
+          @if (photos.length > 1) {
+            <div class="plate__thumbs">
+              @for (image of photos; track $index) {
+                <button type="button" class="plate__thumb" [class.plate__thumb--on]="$index === photo()"
+                        (click)="selectPhoto($index)" [attr.aria-label]="'Photo ' + ($index + 1)"
+                        [attr.aria-pressed]="$index === photo()">
+                  <img [alt]="" [src]="image" loading="lazy" (error)="onImageError($event)"/>
+                </button>
+              }
+            </div>
+          }
+        } @else {
+          <div class="plate__main plate__main--empty">
+            <span class="meta">No photo for this trim</span>
+          </div>
+        }
+      </section>
+
+      <div class="groups">
+        @for (group of groups(); track group.title) {
+          <section class="group">
+            <h2 class="group__title">{{ group.title }}</h2>
+            <table class="sheet">
+              <tbody>
+                @for (row of group.rows; track row.key) {
+                  <tr>
+                    <th scope="row" class="sheet__label">{{ row.label }}</th>
+                    <td class="sheet__value" [class.absent]="!row.value || row.locked">
+                      {{ valueText(row.value, row.locked) }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        } @empty {
+          <!-- Most trims in the database have no scraped record yet, so this is
+               the common case rather than an edge. Saying so beats an empty
+               right-hand column that reads as "this car has no specifications". -->
+          <p class="state state--inline">
+            <strong>No specification recorded</strong>
+            This trim has no scraped specification sheet yet. The source page has
+            @if (trim()?.url) {
+              <a class="source" [href]="'https://www.auto-data.net/en/' + trim()!.url"
+                 target="_blank" rel="noopener noreferrer">the figures here</a>.
+            } @else {
+              the figures.
+            }
+          </p>
+        }
+      </div>
+    </div>
+  }
+</div>

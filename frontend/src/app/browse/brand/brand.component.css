@@ -1,7 +1,7 @@
-.models-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
-  max-width: 800px;
+/* Narrower than the default measure on purpose: a model row carries a name, a
+   production status and a year range. The years stay in a right-aligned column
+   so they scan vertically, and a wider measure would only open a gap between
+   the two. */
+.page {
+  max-width: 700px;
 }

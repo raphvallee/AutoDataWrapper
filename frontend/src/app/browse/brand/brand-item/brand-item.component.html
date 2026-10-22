@@ -1,30 +1,17 @@
-<a (click)="clicked()" class="model-item">
-  <div class="image-container">
-    <img [alt]="item.name" [src]="item.imageUrl || placeholder" (error)="onImageError($event)"
-         class="model-image">
-  </div>
-  <div class="model-details">
-    <p class="model-name">{{ item.name }}</p>
-    <p class="model-years">
-      {{ item.startYear | date:'yyyy' }} -
-      @if (item.endYear) {
-        {{ item.endYear | date:'yyyy' }}
-      } @else {
-        Present
-      }
-    </p>
-  </div>
-  <div [class.stopped]="item.endYear" class="status-badge">
-    @if (item.endYear) {
-      <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-              stroke-width="2"/>
-      </svg>
-    } @else {
-      <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M5 12L10 17L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-              stroke-width="2"/>
-      </svg>
+<a class="row" [routerLink]="[slug()]">
+  <span class="row__mark" aria-hidden="true"></span>
+  <img class="row__thumb" [alt]="" [src]="item.imageUrl"
+       (error)="onImageError($event)" loading="lazy"/>
+  <span class="row__body">
+    <span class="row__name">{{ item.name }}</span>
+    <!-- Shown only while a model is still being built. Repeating "production
+         ended" on every row says nothing, and it dulls the one amber mark that
+         does carry information. -->
+    @if (inProduction()) {
+      <span class="prod prod--live">In production</span>
     }
-  </div>
+  </span>
+  <span class="row__aside">
+    <span class="row__years">{{ years() }}</span>
+  </span>
 </a>

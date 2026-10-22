@@ -1,19 +1,62 @@
-<p>brand works!</p>
-
-@if (brand?.name) {
-  <p>Showing models for {{ brand.name }}</p>
-} @else {
-  <p>Showing models for ...</p>
-}
-
-<div class="models-container">
-  @if (loading) {
-    <p>Fetching models...</p>
-  } @else if (models.length === 0) {
-    <p>No models found.</p>
-  } @else {
-    @for (item of models; track item) {
-      <app-brand-item [item]="item"/>
+<div class="page" [attr.aria-busy]="load.busy()">
+  <header class="page-head">
+    @if (brand(); as b) {
+      @if (b.imageUrl) {
+        <img class="page-head__mark" [src]="b.imageUrl" [alt]="b.name + ' logo'" (error)="$event.target.style.visibility = 'hidden'"/>
+      }
+      <div class="page-head__body">
+        <div class="page-head__title-row">
+          <h1 class="display">{{ b.name }}</h1>
+        </div>
+        <p class="meta">
+          {{ models().length }} {{ models().length === 1 ? 'model' : 'models' }} in the database.
+          Pick one to see its generations.
+        </p>
+      </div>
+    } @else {
+      <div class="page-head__body">
+        <!-- The heading has to change with the state: leaving "Loading" above a
+             failure message reads as a request still in flight. -->
+        <h1 class="display">{{ failed() ? 'Not found' : 'Loading' }}</h1>
+        <!-- Inside the heading's own column: as a sibling it becomes another
+             flex item of the page head and lands beside the title. -->
+        <app-load-status [subject]="brand()?.name ?? ''"/>
+      </div>
     }
+  </header>
+
+  @if (load.visible()) {
+    <!-- The real list is image-led rows, so each placeholder is a row with the
+         picture column and both text lines in place. -->
+    <div class="rows" aria-hidden="true">
+      @for (placeholder of [1, 2, 3, 4, 5, 6, 7]; track placeholder) {
+        <div class="row sk-row">
+          <span class="sk-thumb"></span>
+          <span class="row__body">
+            <span class="sk-line sk-line--mid"></span>
+            <span class="sk-line sk-line--sm sk-line--short"></span>
+          </span>
+          <span class="row__aside">
+            <span class="sk-line sk-line--sm sk-line--short"></span>
+          </span>
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <p class="state">
+      <strong>We could not load that brand</strong>
+      The database has no marque matching this address. It may have been removed.
+    </p>
+  } @else if (models().length === 0) {
+    <p class="state">
+      <strong>No models recorded</strong>
+      Nothing has been added under {{ brand()?.name }} yet.
+    </p>
+  } @else {
+    <div class="rows">
+      @for (item of models(); track item.id) {
+        <app-brand-item [item]="item"/>
+      }
+    </div>
   }
 </div>
